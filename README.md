@@ -4,14 +4,9 @@
 
 ## ✨ 기능
 
-### 🎨 UI 테마
-- **Neon**: 네온 스타일의 현대적인 UI
-- **Pastel**: 파스텔 톤의 부드러운 UI
-
 ### 📡 지원 서비스
 - **Spotify**: 현재 재생 중인 음악 정보 표시
 - **네이버 게임 채팅**: 실시간 채팅 메시지 표시
-- **백그라운드 이펙트**: 다양한 시각 효과
 
 ## 🚀 빠른 시작
 
@@ -61,17 +56,6 @@ pip install -r requirements.txt
 ```bash
 cd neon
 python main.py
-```
-
-#### Pastel 테마 (개별 실행)
-```bash
-cd pastel
-
-# Spotify 오버레이
-python spotify_pixel_overlay.py
-
-# 채팅 오버레이
-python pixel_chat_overlay.py
 ```
 
 #### 자동 실행 스크립트 사용
