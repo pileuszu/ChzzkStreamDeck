@@ -1,0 +1,12 @@
+# 네온 오버레이 시스템 의존성
+websockets>=11.0.0
+asyncio-mqtt>=0.11.0
+aiohttp>=3.8.0
+
+# 데스크톱 앱 모드용 의존성
+pywebview>=4.0.0
+
+# 빌드용 의존성 (추후 앱 빌드시 필요)
+# pyinstaller>=5.0.0
+# cx-freeze>=6.0.0
+# auto-py-to-exe>=2.0.0 
