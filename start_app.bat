@@ -7,15 +7,39 @@ echo 🎮 치지직 스트림덱 컨트롤러 시작
 echo ====================================
 echo.
 
-rem Python 설치 확인
+rem 시스템 요구사항 체크
+echo 🔍 시스템 요구사항 확인 중...
 python --version >nul 2>&1
 if errorlevel 1 (
     echo ❌ 오류: Python이 설치되지 않았습니다.
-    echo    Python 3.7 이상을 설치한 후 다시 실행해주세요.
-    echo    설치 링크: https://www.python.org/downloads/
+    echo.
+    echo 📋 Python 설치 가이드:
+    echo 1. https://www.python.org/downloads/ 접속
+    echo 2. Python 3.13.x 다운로드
+    echo 3. 설치 시 "Add Python to PATH" 체크박스 선택
+    echo 4. 설치 완료 후 이 스크립트 다시 실행
+    echo.
+    echo 💡 또는 check_system.py를 실행하여 상세한 가이드 확인
     echo.
     pause
     exit /b 1
+)
+
+rem 상세 시스템 체크 (선택적)
+if exist "check_system.py" (
+    echo 🔍 상세 시스템 체크 실행 중...
+    python check_system.py
+    if errorlevel 1 (
+        echo.
+        echo ⚠️  시스템 체크에서 문제가 발견되었습니다.
+        echo    계속 진행하시겠습니까? ^(Y/N^)
+        set /p CONTINUE="계속: "
+        if /i not "%CONTINUE%"=="Y" (
+            echo 설치를 중단합니다.
+            pause
+            exit /b 1
+        )
+    )
 )
 
 rem Python 버전 확인

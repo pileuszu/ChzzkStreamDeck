@@ -49,7 +49,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: 🐍 Python 설정
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
@@ -79,7 +79,7 @@ jobs:
       
       - name: 🔨 Windows 실행 파일 빌드
         run: |
-          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --hidden-import websockets --hidden-import aiohttp --hidden-import requests --hidden-import pywebview --hidden-import psutil
+          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --add-data "check_system.py;." --hidden-import websockets --hidden-import aiohttp --hidden-import requests --hidden-import pywebview --hidden-import psutil
       
       - name: 📦 Windows 릴리스 패키지 생성
         run: |
@@ -87,6 +87,7 @@ jobs:
           copy dist\ChzzkStreamDeck.exe release-windows\
           copy config_build.json release-windows\ 2>nul || echo "config_build.json not found"
           copy README.md release-windows\ 2>nul || echo "README.md not found"
+          copy check_system.py release-windows\ 2>nul || echo "check_system.py not found"
           
           echo # ChzzkStreamDeck Windows 사용 가이드 > release-windows\USER_GUIDE.md
           echo. >> release-windows\USER_GUIDE.md
@@ -96,7 +97,7 @@ jobs:
           echo 3. 관리패널에서 설정 입력 >> release-windows\USER_GUIDE.md
       
       - name: 📤 Windows 아티팩트 업로드
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ChzzkStreamDeck-Windows-${{ needs.version.outputs.version }}
           path: release-windows/
@@ -109,7 +110,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: 🐍 Python 설정
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
@@ -145,6 +146,7 @@ jobs:
             --add-data "requirements.txt:." \
             --add-data "config_build.json:." \
             --add-data "README.md:." \
+            --add-data "check_system.py:." \
             --hidden-import websockets \
             --hidden-import aiohttp \
             --hidden-import requests \
@@ -157,6 +159,7 @@ jobs:
           cp dist/ChzzkStreamDeck release-linux/
           cp config_build.json release-linux/ || echo "config_build.json not found"
           cp README.md release-linux/ || echo "README.md not found"
+          cp check_system.py release-linux/ || echo "check_system.py not found"
           chmod +x release-linux/ChzzkStreamDeck
           
           # 실행 스크립트 생성
@@ -168,7 +171,7 @@ jobs:
           chmod +x release-linux/run.sh
       
       - name: 📤 Linux 아티팩트 업로드
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ChzzkStreamDeck-Linux-${{ needs.version.outputs.version }}
           path: release-linux/
@@ -182,7 +185,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: 📥 모든 아티팩트 다운로드
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       
       - name: 📦 릴리스 압축 파일 생성
         run: |

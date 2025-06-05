@@ -136,7 +136,7 @@ def create_release_package():
             shutil.copy2(exe_path, release_dir / 'ChzzkStreamDeck')
     
     # 설정 파일 복사
-    config_files = ['config_build.json', 'README.md']
+    config_files = ['config_build.json', 'README.md', 'check_system.py']
     for config_file in config_files:
         if os.path.exists(config_file):
             shutil.copy2(config_file, release_dir / config_file)
