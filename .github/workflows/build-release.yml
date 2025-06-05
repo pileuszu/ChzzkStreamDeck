@@ -90,16 +90,28 @@ jobs:
         run: |
           mkdir release-windows
           copy dist\ChzzkStreamDeck.exe release-windows\
-          copy config_build.json release-windows\ 2>nul || echo "config_build.json not found"
-          copy README.md release-windows\ 2>nul || echo "README.md not found"
-          copy check_system.py release-windows\ 2>nul || echo "check_system.py not found"
+          copy config_build.json release-windows\ 2>nul || Write-Output "config_build.json not found"
+          copy README.md release-windows\ 2>nul || Write-Output "README.md not found"
+          copy check_system.py release-windows\ 2>nul || Write-Output "check_system.py not found"
           
-          echo # ChzzkStreamDeck Windows Usage Guide > release-windows\USER_GUIDE.md
-          echo. >> release-windows\USER_GUIDE.md
-          echo ## How to Run >> release-windows\USER_GUIDE.md
-          echo 1. Double-click ChzzkStreamDeck.exe >> release-windows\USER_GUIDE.md
-          echo 2. If Windows Defender warns, click More info -^> Run anyway >> release-windows\USER_GUIDE.md
-          echo 3. Configure settings in admin panel >> release-windows\USER_GUIDE.md
+          @"
+          # ChzzkStreamDeck Windows Usage Guide
+          
+          ## How to Run
+          1. Double-click ChzzkStreamDeck.exe
+          2. If Windows Defender warns, click More info -> Run anyway
+          3. Configure settings in admin panel
+          
+          ## System Requirements
+          - Windows 10/11
+          - No Python installation required (embedded)
+          - Internet connection for Spotify/Chzzk features
+          
+          ## Troubleshooting
+          - If the app doesn't start, try running as administrator
+          - Check Windows Defender/antivirus settings
+          - Ensure port 8080 is available
+          "@ | Out-File -FilePath "release-windows\USER_GUIDE.md" -Encoding UTF8
       
       - name: 📤 Windows 아티팩트 업로드
         uses: actions/upload-artifact@v4
