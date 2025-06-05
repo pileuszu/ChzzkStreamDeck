@@ -18,6 +18,9 @@ pywebview>=4.0.0
 # 개발 및 로깅
 logging-config>=1.0.0
 
+# 프로세스 관리
+psutil>=5.9.0
+
 # 빌드용 의존성 (추후 앱 빌드시 필요)
 # pyinstaller>=5.0.0
 # cx-freeze>=6.0.0

@@ -113,9 +113,9 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
     
     def _handle_admin_panel(self):
         """관리패널 처리"""
-        from admin_panel import AdminPanelHandler
+        from admin_panel import AdminPanelLogicHandler
         # 임시 핸들러 생성하고 HTML만 가져오기
-        temp_handler = AdminPanelHandler.__new__(AdminPanelHandler)
+        temp_handler = AdminPanelLogicHandler.__new__(AdminPanelLogicHandler)
         html = temp_handler.get_admin_panel_html()
         
         self.send_response(200)
@@ -220,6 +220,36 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 
                 response = {"success": False, "message": f"모듈 설정 변경 실패: {e}"}
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+        
+        elif parsed_path.path == '/api/shutdown':
+            # 앱 종료 API
+            try:
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                
+                response = {"success": True, "message": "앱이 종료됩니다."}
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                
+                # 1초 후 앱 종료
+                def shutdown_app():
+                    import time
+                    time.sleep(1)
+                    import os
+                    os._exit(0)
+                
+                shutdown_thread = threading.Thread(target=shutdown_app, daemon=True)
+                shutdown_thread.start()
+                
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                
+                response = {"success": False, "message": f"앱 종료 실패: {e}"}
                 self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
         
         elif parsed_path.path == '/api/modules/start':
@@ -890,8 +920,79 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
 </html>"""
     
     def _get_spotify_overlay_html(self):
-        """스포티파이 오버레이 HTML"""
-        # 직접 HTML 반환 (spotify_server.py와 동일한 내용)
+        """스포티파이 오버레이 HTML - 테마에 따라 다른 UI 제공"""
+        current_theme = config_manager.get_spotify_theme()
+        
+        if current_theme == "purple":
+            # Purple 테마 사용
+            import sys
+            import os
+            # purple 폴더를 Python 경로에 추가
+            purple_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'purple')
+            if purple_dir not in sys.path:
+                sys.path.insert(0, purple_dir)
+            
+            try:
+                # 이미 import된 모듈이 있다면 reload
+                if 'purple_spotify_overlay' in sys.modules:
+                    import importlib
+                    importlib.reload(sys.modules['purple_spotify_overlay'])
+                    
+                from purple_spotify_overlay import get_purple_spotify_template
+                logger.info("Purple 테마가 성공적으로 로드되었습니다.")
+                return get_purple_spotify_template()
+            except ImportError as e:
+                logger.warning(f"Purple 테마를 불러올 수 없습니다: {e}. 기본 테마를 사용합니다.")
+            except Exception as e:
+                logger.error(f"Purple 테마 로드 중 오류: {e}")
+        
+        elif current_theme == "purple_compact":
+            # Purple 컴팩트 테마 사용
+            import sys
+            import os
+            # purple 폴더를 Python 경로에 추가
+            purple_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'purple')
+            if purple_dir not in sys.path:
+                sys.path.insert(0, purple_dir)
+            
+            try:
+                # 이미 import된 모듈이 있다면 reload
+                if 'purple_compact_spotify_overlay' in sys.modules:
+                    import importlib
+                    importlib.reload(sys.modules['purple_compact_spotify_overlay'])
+                    
+                from purple_compact_spotify_overlay import get_purple_compact_template
+                logger.info("Purple 컴팩트 테마가 성공적으로 로드되었습니다.")
+                return get_purple_compact_template()
+            except ImportError as e:
+                logger.warning(f"Purple 컴팩트 테마를 불러올 수 없습니다: {e}. 기본 테마를 사용합니다.")
+            except Exception as e:
+                logger.error(f"Purple 컴팩트 테마 로드 중 오류: {e}")
+        
+        elif current_theme in ["default", "neon"]:
+            # Neon 테마 사용
+            import sys
+            import os
+            # neon 폴더를 Python 경로에 추가
+            neon_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'neon')
+            if neon_dir not in sys.path:
+                sys.path.insert(0, neon_dir)
+            
+            try:
+                # 이미 import된 모듈이 있다면 reload
+                if 'neon_spotify_ui' in sys.modules:
+                    import importlib
+                    importlib.reload(sys.modules['neon_spotify_ui'])
+                    
+                from neon_spotify_ui import get_neon_spotify_template
+                logger.info("Neon 테마가 성공적으로 로드되었습니다.")
+                return get_neon_spotify_template()
+            except ImportError as e:
+                logger.warning(f"Neon 테마를 불러올 수 없습니다: {e}. 기본 테마를 사용합니다.")
+            except Exception as e:
+                logger.error(f"Neon 테마 로드 중 오류: {e}")
+        
+        # 기본 네온 테마 (fallback)
         return """<!DOCTYPE html>
 <html lang="ko">
 <head>

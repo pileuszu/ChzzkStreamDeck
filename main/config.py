@@ -44,25 +44,21 @@ DEFAULT_CONFIG = {
                     "description": "기본 네온 글로우 스타일"
                 },
                 {
-                    "id": "minimal",
-                    "name": "미니멀 테마",
-                    "description": "깔끔한 미니멀 디자인"
+                    "id": "purple",
+                    "name": "퍼플 테마",
+                    "description": "보라색 그라데이션 스타일"
                 },
                 {
-                    "id": "retro",
-                    "name": "레트로 테마",
-                    "description": "80년대 신스웨이브 스타일"
-                },
-                {
-                    "id": "glass",
-                    "name": "글래스모피즘",
-                    "description": "투명한 글래스 효과"
+                    "id": "purple_compact",
+                    "name": "퍼플 컴팩트",
+                    "description": "보라색 한 줄 컴팩트 스타일"
                 }
             ]
         }
     },
     "ui": {
         "theme": "neon",
+        "admin_theme": "neon",
         "language": "ko",
         "chat_background": "transparent",
         "dark_mode": True
@@ -75,6 +71,10 @@ class ConfigManager:
     def __init__(self, config_file: str = CONFIG_FILE):
         self.config_file = config_file
         self.config = self.load_config()
+    
+    def get_config(self) -> Dict[str, Any]:
+        """현재 설정 전체 반환"""
+        return self.config
     
     def load_config(self) -> Dict[str, Any]:
         """설정 파일 로드"""
@@ -91,9 +91,13 @@ class ConfigManager:
             logger.error(f"설정 파일 로드 실패: {e}")
             return DEFAULT_CONFIG.copy()
     
-    def save_config(self) -> bool:
+    def save_config(self, config_data: Dict[str, Any] = None) -> bool:
         """설정 파일 저장"""
         try:
+            # 설정 데이터가 제공되면 현재 설정을 업데이트
+            if config_data is not None:
+                self.config = config_data
+            
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=2, ensure_ascii=False)
             logger.info("설정이 저장되었습니다.")
@@ -192,4 +196,5 @@ class ConfigManager:
         return self.get("modules.spotify.available_themes", [])
 
 # 전역 설정 관리자 인스턴스
-config_manager = ConfigManager() 
+CONFIG_MANAGER = ConfigManager()
+config_manager = CONFIG_MANAGER  # 이전 버전 호환성 
