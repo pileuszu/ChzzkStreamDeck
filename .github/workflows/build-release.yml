@@ -93,46 +93,62 @@ jobs:
       - name: 🔨 Windows 실행 파일 빌드
         run: |
           # 바이러스 오탐 방지를 위한 최적화된 빌드
-          pyinstaller --clean --noconfirm --onedir main.py --name ChzzkStreamDeck ^
-            --distpath dist-windows ^
-            --workpath build-windows ^
-            --add-data "neon;neon" ^
-            --add-data "purple;purple" ^
-            --add-data "main;main" ^
-            --add-data "requirements.txt;." ^
-            --add-data "config_build.json;." ^
-            --add-data "README.md;." ^
-            --add-data "check_system.py;." ^
-            --noupx ^
-            --strip ^
-            --log-level=WARN ^
-            --hidden-import websockets ^
-            --hidden-import websockets.legacy ^
-            --hidden-import websockets.legacy.server ^
-            --hidden-import aiohttp ^
-            --hidden-import aiohttp.web ^
-            --hidden-import aiohttp.client ^
-            --hidden-import requests ^
-            --hidden-import urllib3 ^
-            --hidden-import certifi ^
-            --hidden-import pywebview ^
-            --hidden-import pywebview.platforms ^
-            --hidden-import pywebview.platforms.winforms ^
-            --hidden-import pywebview.platforms.cef ^
-            --hidden-import psutil ^
-            --hidden-import http.server ^
-            --hidden-import json ^
-            --hidden-import webbrowser ^
-            --hidden-import threading ^
-            --hidden-import logging ^
-            --hidden-import asyncio ^
-            --exclude-module matplotlib ^
-            --exclude-module numpy ^
-            --exclude-module pandas ^
-            --exclude-module scipy ^
-            --exclude-module tkinter ^
-            --exclude-module PIL ^
-            --exclude-module cv2
+          $pyinstaller_args = @(
+            "--clean",
+            "--noconfirm", 
+            "--onedir",
+            "main.py",
+            "--name", "ChzzkStreamDeck",
+            "--distpath", "dist-windows",
+            "--workpath", "build-windows",
+            "--add-data", "neon;neon",
+            "--add-data", "purple;purple", 
+            "--add-data", "main;main",
+            "--add-data", "requirements.txt;.",
+            "--add-data", "config_build.json;.",
+            "--add-data", "README.md;.",
+            "--add-data", "check_system.py;.",
+            "--noupx",
+            "--strip",
+            "--log-level=WARN",
+            "--hidden-import", "websockets",
+            "--hidden-import", "websockets.legacy",
+            "--hidden-import", "websockets.legacy.server",
+            "--hidden-import", "aiohttp",
+            "--hidden-import", "aiohttp.web",
+            "--hidden-import", "aiohttp.client",
+            "--hidden-import", "requests",
+            "--hidden-import", "urllib3",
+            "--hidden-import", "certifi",
+            "--hidden-import", "pywebview",
+            "--hidden-import", "pywebview.platforms",
+            "--hidden-import", "pywebview.platforms.winforms",
+            "--hidden-import", "pywebview.platforms.cef",
+            "--hidden-import", "psutil",
+            "--hidden-import", "http.server",
+            "--hidden-import", "json",
+            "--hidden-import", "webbrowser",
+            "--hidden-import", "threading",
+            "--hidden-import", "logging",
+            "--hidden-import", "asyncio",
+            "--exclude-module", "matplotlib",
+            "--exclude-module", "numpy",
+            "--exclude-module", "pandas",
+            "--exclude-module", "scipy",
+            "--exclude-module", "tkinter",
+            "--exclude-module", "PIL",
+            "--exclude-module", "cv2"
+          )
+          
+          Write-Output "🔨 PyInstaller 실행 중..."
+          & pyinstaller @pyinstaller_args
+          
+          if ($LASTEXITCODE -eq 0) {
+            Write-Output "✅ 빌드 성공!"
+          } else {
+            Write-Output "❌ 빌드 실패!"
+            exit 1
+          }
       
       - name: 📦 Windows 릴리스 패키지 생성
         run: |
