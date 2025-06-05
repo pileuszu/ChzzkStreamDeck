@@ -167,8 +167,11 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                     try:
                         from spotify_api import SpotifyAPI
                         spotify_api = SpotifyAPI()
-                        module_status["authenticated"] = spotify_api.is_authenticated()
+                        authenticated = spotify_api.is_authenticated()
+                        module_status["authenticated"] = authenticated
+                        logger.info(f"Spotify 인증 상태: {authenticated}")
                     except Exception as e:
+                        logger.warning(f"Spotify 인증 상태 확인 실패: {e}")
                         module_status["authenticated"] = False
                 
                 status["modules"][module_name] = module_status
@@ -582,7 +585,10 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             
             # 임시 핸들러 생성하고 HTML만 가져오기
             temp_handler = OverlayHTTPHandler.__new__(OverlayHTTPHandler)
-            return temp_handler.get_overlay_html()
+            html = temp_handler.get_overlay_html()
+            # API 엔드포인트를 통합 서버 경로로 수정
+            html = html.replace('/api/messages', '/chat/api/messages')
+            return html
             
         except ImportError as e:
             logger.warning(f"Neon 채팅 오버레이를 불러올 수 없습니다: {e}. 기본 템플릿을 사용합니다.")
@@ -1322,9 +1328,10 @@ def main():
     parser.add_argument('--port', type=int, default=8080, help='서버 포트 번호 (기본값: 8080)')
     args = parser.parse_args()
     
-    # 실행 파일인 경우 자동으로 앱 모드 활성화
-    if getattr(sys, 'frozen', False) and not args.browser:
-        APP_MODE = True
+    # 실행 파일인 경우 자동으로 앱 모드 활성화 (강제)
+    if getattr(sys, 'frozen', False):
+        APP_MODE = True  # 실행 파일에서는 무조건 앱 모드
+        print("🚀 실행 파일 감지 - 강제 앱 모드 활성화")
     else:
         APP_MODE = args.app
     

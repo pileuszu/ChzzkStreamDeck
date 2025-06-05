@@ -178,4 +178,23 @@ def get_current_track_data():
 
 def is_authenticated():
     """인증 상태 확인"""
-    return access_token is not None 
+    global access_token, token_expires_at
+    
+    # 토큰이 없으면 인증되지 않음
+    if not access_token:
+        logger.info("Spotify 토큰이 없습니다.")
+        return False
+    
+    # 토큰이 만료되었으면 갱신 시도
+    if token_expires_at and datetime.now() >= token_expires_at:
+        logger.info("Spotify 토큰이 만료되었습니다. 갱신을 시도합니다.")
+        spotify_api = SpotifyAPI()
+        if spotify_api.refresh_access_token():
+            logger.info("Spotify 토큰 갱신 성공!")
+            return True
+        else:
+            logger.warning("Spotify 토큰 갱신 실패!")
+            return False
+    
+    logger.info("Spotify 인증 상태: 유효함")
+    return True 
