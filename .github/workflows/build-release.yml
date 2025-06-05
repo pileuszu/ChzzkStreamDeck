@@ -90,7 +90,7 @@ jobs:
       
       - name: 🔨 Windows 실행 파일 빌드
         run: |
-          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --add-data "check_system.py;." --hidden-import websockets --hidden-import aiohttp --hidden-import requests --hidden-import pywebview --hidden-import psutil --hidden-import http.server --hidden-import http --hidden-import socketserver --hidden-import urllib.parse --hidden-import json --collect-all http
+          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --add-data "check_system.py;." --hidden-import websockets --hidden-import aiohttp --hidden-import requests --hidden-import pywebview --hidden-import psutil --hidden-import http.server --hidden-import http --hidden-import socketserver --hidden-import urllib.parse --hidden-import urllib.request --hidden-import json --hidden-import webbrowser --hidden-import base64 --hidden-import platform --hidden-import subprocess --hidden-import signal --hidden-import atexit --hidden-import importlib --hidden-import datetime --hidden-import threading --hidden-import time --hidden-import logging --hidden-import asyncio --hidden-import pathlib --hidden-import typing --collect-all http --collect-all urllib --collect-all datetime --strip --exclude-module matplotlib --exclude-module numpy --exclude-module pandas --exclude-module scipy --exclude-module tkinter --exclude-module PIL --exclude-module cv2 --exclude-module torch --exclude-module tensorflow
       
       - name: 📦 Windows 릴리스 패키지 생성
         run: |
@@ -182,8 +182,35 @@ jobs:
             --hidden-import http \
             --hidden-import socketserver \
             --hidden-import urllib.parse \
+            --hidden-import urllib.request \
             --hidden-import json \
-            --collect-all http
+            --hidden-import webbrowser \
+            --hidden-import base64 \
+            --hidden-import platform \
+            --hidden-import subprocess \
+            --hidden-import signal \
+            --hidden-import atexit \
+            --hidden-import importlib \
+            --hidden-import datetime \
+            --hidden-import threading \
+            --hidden-import time \
+            --hidden-import logging \
+            --hidden-import asyncio \
+            --hidden-import pathlib \
+            --hidden-import typing \
+            --collect-all http \
+            --collect-all urllib \
+            --collect-all datetime \
+            --strip \
+            --exclude-module matplotlib \
+            --exclude-module numpy \
+            --exclude-module pandas \
+            --exclude-module scipy \
+            --exclude-module tkinter \
+            --exclude-module PIL \
+            --exclude-module cv2 \
+            --exclude-module torch \
+            --exclude-module tensorflow
       
       - name: 📦 Linux 릴리스 패키지 생성
         run: |
