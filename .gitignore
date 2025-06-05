@@ -29,6 +29,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# pip install 실패로 생긴 파일들
+=*
+=*.*.* 
+
 # 가상환경
 .venv/
 venv/

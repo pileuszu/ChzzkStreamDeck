@@ -1,4 +1,28 @@
-requests==2.31.0
-aiohttp==3.9.1
-websockets==12.0
-pyinstaller==6.3.0 
+# ChzzkStreamDeck 프로젝트 의존성
+# 기본 웹소켓 및 비동기 통신
+websockets>=11.0.0
+asyncio-mqtt>=0.11.0
+aiohttp>=3.8.0
+
+# HTTP 요청 라이브러리
+requests>=2.31.0
+
+# GUI 및 그래픽 처리
+pygame>=2.4.0
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# 데스크톱 앱 모드용 의존성
+pywebview>=4.0.0
+
+# 개발 및 로깅
+logging-config>=1.0.0
+
+# 빌드용 의존성 (추후 앱 빌드시 필요)
+# pyinstaller>=5.0.0
+# cx-freeze>=6.0.0
+# auto-py-to-exe>=2.0.0
+
+# 선택적 의존성
+# matplotlib>=3.7.0  # 그래프 생성이 필요한 경우
+# scipy>=1.10.0      # 고급 수학 연산이 필요한 경우 
