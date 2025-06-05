@@ -112,11 +112,32 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 pass
     
     def _handle_admin_panel(self):
-        """관리패널 처리"""
-        from admin_panel import AdminPanelLogicHandler
-        # 임시 핸들러 생성하고 HTML만 가져오기
-        temp_handler = AdminPanelLogicHandler.__new__(AdminPanelLogicHandler)
-        html = temp_handler.get_admin_panel_html()
+        """관리패널 처리 - 네온 테마 사용"""
+        try:
+            # 네온 관리 UI 사용
+            import sys
+            import os
+            # neon 폴더를 Python 경로에 추가
+            neon_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'neon')
+            if neon_dir not in sys.path:
+                sys.path.insert(0, neon_dir)
+            
+            from neon_admin_ui import get_neon_admin_template
+            html = get_neon_admin_template()
+            logger.info("네온 관리 패널이 성공적으로 로드되었습니다.")
+            
+        except ImportError as e:
+            logger.warning(f"네온 관리 패널을 불러올 수 없습니다: {e}. 기본 패널을 사용합니다.")
+            # 폴백: 기본 관리 패널
+            from admin_panel import AdminPanelLogicHandler
+            temp_handler = AdminPanelLogicHandler.__new__(AdminPanelLogicHandler)
+            html = temp_handler.get_admin_panel_html()
+        except Exception as e:
+            logger.error(f"관리 패널 로드 중 오류: {e}")
+            # 폴백: 기본 관리 패널
+            from admin_panel import AdminPanelLogicHandler
+            temp_handler = AdminPanelLogicHandler.__new__(AdminPanelLogicHandler)
+            html = temp_handler.get_admin_panel_html()
         
         self.send_response(200)
         self.send_header('Content-type', 'text/html; charset=utf-8')
@@ -165,11 +186,18 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 # Spotify 모듈의 경우 인증 상태 추가
                 if module_name == 'spotify':
                     try:
-                        from spotify_api import SpotifyAPI
-                        spotify_api = SpotifyAPI()
-                        authenticated = spotify_api.is_authenticated()
+                        from spotify_api import is_authenticated
+                        authenticated = is_authenticated()
                         module_status["authenticated"] = authenticated
-                        logger.info(f"Spotify 인증 상태: {authenticated}")
+                        logger.info(f"Spotify 인증 상태 조회: {authenticated}")
+                        
+                        # 추가: 토큰 정보도 로그로 확인
+                        from spotify_api import access_token, token_expires_at
+                        logger.info(f"Spotify 토큰 존재: {access_token is not None}")
+                        if token_expires_at:
+                            from datetime import datetime
+                            logger.info(f"Spotify 토큰 만료: {token_expires_at}, 현재: {datetime.now()}")
+                        
                     except Exception as e:
                         logger.warning(f"Spotify 인증 상태 확인 실패: {e}")
                         module_status["authenticated"] = False
@@ -328,22 +356,36 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 def force_shutdown():
                     import time
                     import os
+                    import subprocess
+                    import platform
                     
                     time.sleep(0.5)  # 응답 전송 후 짧은 대기
                     
                     print("🔥 앱 강제 종료 중...")
                     
                     try:
+                        current_pid = os.getpid()
+                        parent_pid = os.getppid()
+                        
+                        print(f"🔄 프로세스 종료: PID={current_pid}, 부모PID={parent_pid}")
+                        
+                        # Windows에서 부모 프로세스(CMD)도 함께 종료
+                        if platform.system() == "Windows":
+                            try:
+                                # 현재 프로세스와 부모 프로세스 모두 종료
+                                subprocess.run(['taskkill', '/f', '/t', '/pid', str(current_pid)], 
+                                            shell=True, capture_output=True, timeout=2)
+                                subprocess.run(['taskkill', '/f', '/t', '/pid', str(parent_pid)], 
+                                            shell=True, capture_output=True, timeout=2)
+                            except:
+                                pass
+                        
                         # 바로 강제 종료
                         os._exit(0)
                         
                     except Exception as e:
                         print(f"강제 종료 중 오류: {e}")
-                        try:
-                            import sys
-                            sys.exit(0)
-                        except:
-                            exit(0)
+                        os._exit(1)
                 
                 threading.Thread(target=force_shutdown, daemon=True).start()
                 
@@ -1329,11 +1371,16 @@ def main():
     args = parser.parse_args()
     
     # 실행 파일인 경우 자동으로 앱 모드 활성화 (강제)
-    if getattr(sys, 'frozen', False):
+    is_frozen = getattr(sys, 'frozen', False)
+    is_exe = sys.executable.endswith('.exe') and 'python' not in sys.executable.lower()
+    
+    if is_frozen or is_exe:
         APP_MODE = True  # 실행 파일에서는 무조건 앱 모드
-        print("🚀 실행 파일 감지 - 강제 앱 모드 활성화")
+        print(f"🚀 실행 파일 감지 - 강제 앱 모드 활성화 (frozen={is_frozen}, exe={is_exe})")
+        print(f"📁 실행 경로: {sys.executable}")
     else:
         APP_MODE = args.app
+        print(f"🐍 개발 모드 - 선택적 앱 모드 (app={APP_MODE})")
     
     print("🎮 네온 오버레이 통합 시스템 시작!")
     print("="*60)
@@ -1399,32 +1446,48 @@ def start_desktop_app(port):
             """매우 간단하고 확실한 종료"""
             print("\n🔥 앱 종료 중...")
             try:
-                # webview 창 닫기 시도
+                # 1. webview 창 닫기 시도
                 try:
                     webview.destroy_window()
                 except:
                     pass
                 
-                # 서버 정리
+                # 2. 서버 정리
                 if server_manager:
                     try:
                         server_manager.stop_server()
                     except:
                         pass
                 
-                # 바로 강제 종료
-                import os
+                # 3. 모든 프로세스 강제 종료 (부모 프로세스 포함)
+                import psutil
+                import subprocess
+                import platform
+                
+                current_pid = os.getpid()
+                parent_pid = os.getppid()
+                
+                print(f"🔄 프로세스 종료: PID={current_pid}, 부모PID={parent_pid}")
+                
+                # Windows에서 부모 프로세스(CMD)도 함께 종료
+                if platform.system() == "Windows":
+                    try:
+                        # 현재 프로세스와 부모 프로세스 모두 종료
+                        subprocess.run(['taskkill', '/f', '/t', '/pid', str(current_pid)], 
+                                     shell=True, capture_output=True, timeout=2)
+                        subprocess.run(['taskkill', '/f', '/t', '/pid', str(parent_pid)], 
+                                     shell=True, capture_output=True, timeout=2)
+                    except:
+                        pass
+                
+                # 4. 바로 강제 종료
                 print("강제 종료 실행")
                 os._exit(0)
                 
             except Exception as e:
                 print(f"❌ 종료 중 오류: {e}")
-                try:
-                    import sys
-                    sys.exit(0)
-                except:
-                    # 최후 수단
-                    exit(0)
+                # 최후의 수단
+                os._exit(1)
         
         # 백그라운드에서 강제 종료를 처리할 스레드
         shutdown_thread = None

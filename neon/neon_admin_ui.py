@@ -552,7 +552,7 @@ def get_neon_admin_template():
                     </div>
                     <div class="btn-group">
                         <button class="btn" onclick="saveModuleConfig('chat')">설정 저장</button>
-                        <button class="btn secondary" onclick="toggleModule('chat')" id="chat-toggle-btn">시작</button>
+                        <button class="btn primary" onclick="toggleModule('chat')" id="chat-toggle-btn">시작</button>
                     </div>
                 </div>
             </div>

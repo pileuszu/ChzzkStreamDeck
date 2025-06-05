@@ -15,7 +15,10 @@ if exist "ChzzkStreamDeck.exe" (
     echo.
     
     REM 실행 파일이 있는 경우 (빌드된 버전) - 앱 모드로 실행
+    echo 🚀 실행 파일 시작 중...
     "ChzzkStreamDeck.exe" --app
+    echo 🏁 앱이 종료되었습니다.
+    pause
     
     echo 📱 데스크톱 앱 모드로 관리패널이 열립니다
     echo 💡 만약 앱이 열리지 않으면 http://localhost:8080/admin 브라우저로 접속하세요
