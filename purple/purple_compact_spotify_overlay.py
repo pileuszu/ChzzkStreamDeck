@@ -82,6 +82,7 @@ def get_purple_compact_template():
             height: 40px;
             overflow: hidden;
             position: relative;
+            width: 100%;
         }
         
         .track-text {
@@ -90,7 +91,8 @@ def get_purple_compact_template():
             color: white;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             white-space: nowrap;
-            animation: marquee 15s linear infinite;
+            animation: marquee 12s linear infinite;
+            animation-play-state: running;
         }
         
         /* 진행바 영역 */
@@ -272,7 +274,7 @@ def get_purple_compact_template():
                         updateTrackInfo(data);
                         isPlaying = data.is_playing || false;
                         
-                        // Marquee 효과 제어
+                        // Marquee 효과 제어 - 재생 상태에 따라
                         const trackTextEl = document.getElementById('trackText');
                         if (isPlaying) {
                             trackTextEl.style.animationPlayState = 'running';

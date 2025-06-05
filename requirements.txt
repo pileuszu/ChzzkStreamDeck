@@ -12,8 +12,11 @@ pygame>=2.4.0
 Pillow>=10.0.0
 numpy>=1.24.0
 
-# 데스크톱 앱 모드용 의존성
-pywebview[cef]>=4.0.0
+# 데스크톱 앱 모드용 의존성 (플랫폼별)
+# Windows: CEF 백엔드 사용
+# Linux: GTK 백엔드 사용
+# macOS: Cocoa 백엔드 사용
+pywebview>=5.0.0
 
 # 개발 및 로깅
 logging-config>=1.0.0

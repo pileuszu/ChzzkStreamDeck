@@ -609,7 +609,10 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             html = temp_handler.get_overlay_html()
             # API 엔드포인트를 통합 서버 경로로 수정
             html = html.replace('/api/messages', '/chat/api/messages')
-            logger.info("채팅 오버레이 HTML 생성 완료 (설정값 적용됨)")
+            
+            # 채팅 설정 로그 출력
+            chat_config = config_manager.get_module_config('chat')
+            logger.info(f"채팅 오버레이 설정 적용: 최대 메시지={chat_config.get('max_messages', 10)}, 스트리머 왼쪽정렬={chat_config.get('streamer_align_left', False)}, 배경 활성화={chat_config.get('background_enabled', True)}")
             return html
             
         except ImportError as e:
@@ -1192,27 +1195,48 @@ class UnifiedServerManager:
     
     async def _run_chat_client(self, channel_id):
         """채팅 클라이언트 실행"""
-        try:
-            def filtered_message_callback(message_data):
-                """필터링된 메시지 콜백"""
-                # 빈 메시지나 익명 샘플 데이터 필터링
-                if (message_data and 
-                    message_data.get('message', '').strip() and  # 빈 메시지 제외
-                    message_data.get('nickname', '').strip() and  # 빈 닉네임 제외
-                    message_data.get('nickname') != '익명'):  # 익명 메시지 제외
-                    add_chat_message(message_data)
-            
-            self.chat_client = ChzzkChatClient(channel_id)
-            
-            if await self.chat_client.connect():
-                await self.chat_client.send_join_message()
-                await self.chat_client.listen_messages(message_callback=filtered_message_callback)
-            else:
-                logger.error("채팅방 연결 실패")
-        except Exception as e:
-            logger.error(f"채팅 클라이언트 오류: {e}")
-        finally:
-            services_running['chat'] = False
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries and services_running.get('chat', False):
+            try:
+                def filtered_message_callback(message_data):
+                    """필터링된 메시지 콜백"""
+                    # 빈 메시지나 익명 샘플 데이터 필터링
+                    if (message_data and 
+                        message_data.get('message', '').strip() and  # 빈 메시지 제외
+                        message_data.get('nickname', '').strip() and  # 빈 닉네임 제외
+                        message_data.get('nickname') != '익명'):  # 익명 메시지 제외
+                        add_chat_message(message_data)
+                
+                logger.info(f"채팅 클라이언트 시작 시도 ({retry_count + 1}/{max_retries})")
+                self.chat_client = ChzzkChatClient(channel_id)
+                
+                if await self.chat_client.connect():
+                    logger.info("채팅방 연결 성공! 메시지 수신 시작...")
+                    await self.chat_client.send_join_message()
+                    await self.chat_client.listen_messages(message_callback=filtered_message_callback)
+                    # 정상 종료된 경우 재시도하지 않음
+                    break
+                else:
+                    logger.error(f"채팅방 연결 실패 ({retry_count + 1}/{max_retries})")
+                    retry_count += 1
+                    
+            except Exception as e:
+                logger.error(f"채팅 클라이언트 오류 ({retry_count + 1}/{max_retries}): {e}")
+                retry_count += 1
+                
+            # 재시도 전 대기 (마지막 시도가 아닌 경우)
+            if retry_count < max_retries and services_running.get('chat', False):
+                wait_time = min(5 * retry_count, 30)  # 최대 30초 대기
+                logger.info(f"재시도 전 {wait_time}초 대기...")
+                await asyncio.sleep(wait_time)
+        
+        if retry_count >= max_retries:
+            logger.error("채팅 클라이언트 최대 재시도 횟수 초과")
+        
+        services_running['chat'] = False
+        logger.info("채팅 서비스 종료됨")
     
     def _start_spotify_service(self):
         """스포티파이 서비스 시작 (내부 메서드)"""

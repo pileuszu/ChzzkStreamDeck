@@ -68,14 +68,19 @@ jobs:
       - name: 📦 의존성 설치
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install pyinstaller
-          # webview와 Windows GUI 라이브러리 설치
-          pip install --upgrade pywebview[cef]>=4.0.0
+          
+          # Windows용 webview 설치 (CEF 백엔드 우선)
+          pip install --upgrade "pywebview[cef]>=5.0.0" || pip install --upgrade "pywebview>=5.0.0"
+          
           # Windows webview 백엔드 설치 시도
-          pip install pywebview[winforms] || echo "winforms backend failed, continuing..."
+          pip install "pywebview[winforms]" || echo "winforms backend failed, continuing..."
+          
           # 추가 GUI 라이브러리 설치
           pip install pythonnet || echo "pythonnet failed, continuing..."
+          
+          # 나머지 의존성 설치
+          pip install -r requirements.txt
       
       - name: 🔧 빌드 설정 생성 (자동)
         run: |
@@ -194,8 +199,8 @@ jobs:
           pip install -r requirements.txt
           
           # Linux용 webview 설치 (GTK 백엔드)
-          pip install --upgrade pywebview[gtk]>=4.0.0 || \
-          pip install --upgrade pywebview>=4.0.0 || \
+          pip install --upgrade "pywebview[gtk]>=5.0.0" || \
+          pip install --upgrade "pywebview>=5.0.0" || \
           echo "PyWebView installation failed, continuing..."
       
       - name: 🔧 빌드 설정 생성 (자동)

@@ -139,20 +139,32 @@ class ChzzkChatClient:
             return False
         
         # 3단계: 웹소켓 연결
-        for endpoint in self.endpoints:
-            try:
-                logger.info(f"웹소켓 연결 시도: {endpoint}")
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                    "Origin": "https://chzzk.naver.com"
-                }
-                self.websocket = await websockets.connect(endpoint, additional_headers=headers)
-                self.is_connected = True
-                logger.info(f"웹소켓 연결 성공: {endpoint}")
-                return True
-            except Exception as e:
-                logger.warning(f"연결 실패 {endpoint}: {e}")
-                continue
+        for attempt in range(3):  # 3번 재시도
+            for endpoint in self.endpoints:
+                try:
+                    logger.info(f"웹소켓 연결 시도 ({attempt+1}/3): {endpoint}")
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                        "Origin": "https://chzzk.naver.com"
+                    }
+                    self.websocket = await websockets.connect(
+                        endpoint, 
+                        additional_headers=headers,
+                        ping_timeout=20,
+                        ping_interval=20,
+                        close_timeout=10
+                    )
+                    self.is_connected = True
+                    logger.info(f"웹소켓 연결 성공: {endpoint}")
+                    return True
+                except Exception as e:
+                    logger.warning(f"연결 실패 {endpoint}: {e}")
+                    continue
+            
+            # 재시도 전 잠시 대기
+            if attempt < 2:
+                logger.info(f"재시도 전 대기 중... ({attempt+1}/3)")
+                await asyncio.sleep(2)
         
         logger.error("모든 웹소켓 연결 실패")
         return False
@@ -197,18 +209,25 @@ class ChzzkChatClient:
                         data = json.loads(message)
                         await self.handle_message(data, message_callback)
                 except json.JSONDecodeError:
-                    logger.warning(f"JSON 파싱 실패: {message}")
+                    logger.warning(f"JSON 파싱 실패: {message[:100]}...")
                 except Exception as e:
                     logger.error(f"메시지 처리 오류: {e}")
                     
-        except websockets.exceptions.ConnectionClosed:
-            logger.info("웹소켓 연결 종료")
+        except websockets.exceptions.ConnectionClosed as e:
+            logger.warning(f"웹소켓 연결 종료: {e}")
+            self.is_connected = False
+        except websockets.exceptions.InvalidState as e:
+            logger.warning(f"웹소켓 상태 오류: {e}")
             self.is_connected = False
         except Exception as e:
             logger.error(f"메시지 수신 오류: {e}")
             self.is_connected = False
         finally:
             heartbeat_task.cancel()
+            try:
+                await heartbeat_task
+            except asyncio.CancelledError:
+                pass
     
     async def handle_message(self, data, message_callback=None):
         """메시지 처리"""
