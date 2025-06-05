@@ -9,6 +9,8 @@ on:
 
 env:
   PYTHON_VERSION: '3.13.3'
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: 1
 
 jobs:
   # 버전 관리
@@ -45,6 +47,9 @@ jobs:
   build-windows:
     needs: version
     runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: 1
     steps:
       - uses: actions/checkout@v4
       
@@ -74,7 +79,7 @@ jobs:
           with open('config_build.json', 'w', encoding='utf-8') as f:
               json.dump(config.config, f, indent=2, ensure_ascii=False)
           
-          print('✅ 빌드 설정 자동 생성 완료')
+          print('Build config generated successfully')
           "
       
       - name: 🔨 Windows 실행 파일 빌드
@@ -89,12 +94,12 @@ jobs:
           copy README.md release-windows\ 2>nul || echo "README.md not found"
           copy check_system.py release-windows\ 2>nul || echo "check_system.py not found"
           
-          echo # ChzzkStreamDeck Windows 사용 가이드 > release-windows\USER_GUIDE.md
+          echo # ChzzkStreamDeck Windows Usage Guide > release-windows\USER_GUIDE.md
           echo. >> release-windows\USER_GUIDE.md
-          echo ## 🎮 실행 방법 >> release-windows\USER_GUIDE.md
-          echo 1. ChzzkStreamDeck.exe 더블클릭 >> release-windows\USER_GUIDE.md
-          echo 2. Windows Defender 경고 시 추가 정보 -^> 실행 클릭 >> release-windows\USER_GUIDE.md
-          echo 3. 관리패널에서 설정 입력 >> release-windows\USER_GUIDE.md
+          echo ## How to Run >> release-windows\USER_GUIDE.md
+          echo 1. Double-click ChzzkStreamDeck.exe >> release-windows\USER_GUIDE.md
+          echo 2. If Windows Defender warns, click More info -^> Run anyway >> release-windows\USER_GUIDE.md
+          echo 3. Configure settings in admin panel >> release-windows\USER_GUIDE.md
       
       - name: 📤 Windows 아티팩트 업로드
         uses: actions/upload-artifact@v4
@@ -106,6 +111,9 @@ jobs:
   build-linux:
     needs: version
     runs-on: ubuntu-latest
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: 1
     steps:
       - uses: actions/checkout@v4
       
@@ -134,7 +142,7 @@ jobs:
           with open('config_build.json', 'w', encoding='utf-8') as f:
               json.dump(config.config, f, indent=2, ensure_ascii=False)
           
-          print('✅ 빌드 설정 자동 생성 완료')
+          print('Build config generated successfully')
           "
       
       - name: 🔨 Linux 실행 파일 빌드
@@ -165,7 +173,7 @@ jobs:
           # 실행 스크립트 생성
           cat > release-linux/run.sh << 'EOF'
           #!/bin/bash
-          echo "🎮 ChzzkStreamDeck 실행 중..."
+          echo "ChzzkStreamDeck starting..."
           ./ChzzkStreamDeck
           EOF
           chmod +x release-linux/run.sh
