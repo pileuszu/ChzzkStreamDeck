@@ -8,12 +8,28 @@
 import json
 import os
 import logging
+import sys
 from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
+def get_config_file_path():
+    """설정 파일의 올바른 경로 반환"""
+    config_filename = "overlay_config.json"
+    
+    # PyInstaller 환경인지 확인
+    if getattr(sys, 'frozen', False):
+        # 실행 파일이 있는 디렉토리 사용
+        executable_dir = os.path.dirname(sys.executable)
+        config_path = os.path.join(executable_dir, config_filename)
+    else:
+        # 개발 환경에서는 현재 작업 디렉토리 사용
+        config_path = config_filename
+    
+    return config_path
+
 # 기본 설정 파일 경로
-CONFIG_FILE = "overlay_config.json"
+CONFIG_FILE = get_config_file_path()
 
 # 기본 설정값
 DEFAULT_CONFIG = {

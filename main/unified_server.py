@@ -24,7 +24,14 @@ from spotify_api import SpotifyAPI, get_current_track_data
 try:
     import webview
     WEBVIEW_AVAILABLE = True
-except ImportError:
+    print("✅ webview 라이브러리 로딩 성공")
+except ImportError as e:
+    print(f"⚠️  webview 라이브러리 로딩 실패: {e}")
+    print("   브라우저 모드로 실행됩니다.")
+    WEBVIEW_AVAILABLE = False
+except Exception as e:
+    print(f"⚠️  webview 라이브러리 로딩 중 오류: {e}")
+    print("   브라우저 모드로 실행됩니다.")
     WEBVIEW_AVAILABLE = False
 
 # 로깅 설정
