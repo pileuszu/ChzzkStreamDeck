@@ -90,12 +90,12 @@ jobs:
       
       - name: 🔨 Windows 실행 파일 빌드
         run: |
-          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --add-data "check_system.py;." --hidden-import websockets --hidden-import aiohttp --hidden-import requests --hidden-import pywebview --hidden-import psutil --hidden-import http.server --hidden-import http --hidden-import socketserver --hidden-import urllib.parse --hidden-import urllib.request --hidden-import json --hidden-import webbrowser --hidden-import base64 --hidden-import platform --hidden-import subprocess --hidden-import signal --hidden-import atexit --hidden-import importlib --hidden-import datetime --hidden-import threading --hidden-import time --hidden-import logging --hidden-import asyncio --hidden-import pathlib --hidden-import typing --collect-all http --collect-all urllib --collect-all datetime --strip --exclude-module matplotlib --exclude-module numpy --exclude-module pandas --exclude-module scipy --exclude-module tkinter --exclude-module PIL --exclude-module cv2 --exclude-module torch --exclude-module tensorflow
+          pyinstaller --clean --noconfirm --onedir main.py --name ChzzkStreamDeck --distpath dist-windows --workpath build-windows --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --add-data "check_system.py;." --hidden-import websockets --hidden-import websockets.legacy --hidden-import websockets.legacy.server --hidden-import aiohttp --hidden-import aiohttp.web --hidden-import aiohttp.client --hidden-import requests --hidden-import requests.adapters --hidden-import requests.auth --hidden-import urllib3 --hidden-import certifi --hidden-import pywebview --hidden-import pywebview.platforms --hidden-import pywebview.platforms.winforms --hidden-import pywebview.platforms.cef --hidden-import psutil --hidden-import http.server --hidden-import http.client --hidden-import http.cookies --hidden-import http.cookiejar --hidden-import socketserver --hidden-import urllib.parse --hidden-import urllib.request --hidden-import urllib.error --hidden-import json --hidden-import webbrowser --hidden-import base64 --hidden-import platform --hidden-import subprocess --hidden-import signal --hidden-import atexit --hidden-import importlib --hidden-import importlib.util --hidden-import datetime --hidden-import threading --hidden-import time --hidden-import logging --hidden-import logging.handlers --hidden-import asyncio --hidden-import asyncio.events --hidden-import asyncio.queues --hidden-import pathlib --hidden-import typing --hidden-import ssl --hidden-import socket --hidden-import select --hidden-import email --hidden-import email.mime --hidden-import email.mime.text --hidden-import hashlib --hidden-import hmac --hidden-import secrets --hidden-import uuid --hidden-import mimetypes --hidden-import shutil --hidden-import tempfile --hidden-import glob --hidden-import fnmatch --hidden-import re --hidden-import string --hidden-import collections --hidden-import collections.abc --hidden-import queue --hidden-import io --hidden-import codecs --hidden-import encodings --hidden-import encodings.utf_8 --hidden-import encodings.cp1252 --collect-all websockets --collect-all aiohttp --collect-all http --collect-all urllib --collect-all datetime --collect-all asyncio --collect-all logging --collect-all email --exclude-module matplotlib --exclude-module numpy --exclude-module pandas --exclude-module scipy --exclude-module tkinter --exclude-module PIL --exclude-module cv2 --exclude-module torch --exclude-module tensorflow --exclude-module IPython --exclude-module jupyter
       
       - name: 📦 Windows 릴리스 패키지 생성
         run: |
           mkdir release-windows
-          copy dist\ChzzkStreamDeck.exe release-windows\
+          robocopy dist-windows\ChzzkStreamDeck release-windows /E /NFL /NDL /NJH /NJS /nc /ns /np || echo "Robocopy completed"
           copy config_build.json release-windows\ 2>nul || Write-Output "config_build.json not found"
           copy README.md release-windows\ 2>nul || Write-Output "README.md not found"
           copy check_system.py release-windows\ 2>nul || Write-Output "check_system.py not found"
@@ -104,19 +104,27 @@ jobs:
           # ChzzkStreamDeck Windows Usage Guide
           
           ## How to Run
-          1. Double-click ChzzkStreamDeck.exe
-          2. If Windows Defender warns, click More info -> Run anyway
-          3. Configure settings in admin panel
+          1. Extract the zip file to a folder
+          2. Double-click ChzzkStreamDeck.exe in the extracted folder
+          3. If Windows Defender warns, click More info -> Run anyway
+          4. Admin panel will open automatically in your browser
+          
+          ## Important Notes
+          - Keep ALL files in the same folder (do not move ChzzkStreamDeck.exe alone)
+          - The app includes all dependencies - no Python installation required
+          - First startup may take 10-15 seconds (creating necessary files)
           
           ## System Requirements
-          - Windows 10/11
-          - No Python installation required (embedded)
+          - Windows 10/11 (64-bit)
+          - 4GB RAM minimum, 8GB recommended
           - Internet connection for Spotify/Chzzk features
+          - 500MB free disk space
           
           ## Troubleshooting
-          - If the app doesn't start, try running as administrator
-          - Check Windows Defender/antivirus settings
-          - Ensure port 8080 is available
+          - If app doesn't start: Run as administrator
+          - If Windows Defender blocks: Add folder to exclusions
+          - If port conflict: Use --port 8081 argument
+          - If slow startup: Be patient on first run (normal behavior)
           "@ | Out-File -FilePath "release-windows\USER_GUIDE.md" -Encoding UTF8
       
       - name: 📤 Windows 아티팩트 업로드
@@ -165,7 +173,9 @@ jobs:
       
       - name: 🔨 Linux 실행 파일 빌드
         run: |
-          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck \
+          pyinstaller --clean --noconfirm --onedir main.py --name ChzzkStreamDeck \
+            --distpath dist-linux \
+            --workpath build-linux \
             --add-data "neon:neon" \
             --add-data "purple:purple" \
             --add-data "main:main" \
@@ -174,15 +184,29 @@ jobs:
             --add-data "README.md:." \
             --add-data "check_system.py:." \
             --hidden-import websockets \
+            --hidden-import websockets.legacy \
+            --hidden-import websockets.legacy.server \
             --hidden-import aiohttp \
+            --hidden-import aiohttp.web \
+            --hidden-import aiohttp.client \
             --hidden-import requests \
+            --hidden-import requests.adapters \
+            --hidden-import requests.auth \
+            --hidden-import urllib3 \
+            --hidden-import certifi \
             --hidden-import pywebview \
+            --hidden-import pywebview.platforms \
+            --hidden-import pywebview.platforms.gtk \
+            --hidden-import pywebview.platforms.qt \
             --hidden-import psutil \
             --hidden-import http.server \
-            --hidden-import http \
+            --hidden-import http.client \
+            --hidden-import http.cookies \
+            --hidden-import http.cookiejar \
             --hidden-import socketserver \
             --hidden-import urllib.parse \
             --hidden-import urllib.request \
+            --hidden-import urllib.error \
             --hidden-import json \
             --hidden-import webbrowser \
             --hidden-import base64 \
@@ -191,17 +215,49 @@ jobs:
             --hidden-import signal \
             --hidden-import atexit \
             --hidden-import importlib \
+            --hidden-import importlib.util \
             --hidden-import datetime \
             --hidden-import threading \
             --hidden-import time \
             --hidden-import logging \
+            --hidden-import logging.handlers \
             --hidden-import asyncio \
+            --hidden-import asyncio.events \
+            --hidden-import asyncio.queues \
             --hidden-import pathlib \
             --hidden-import typing \
+            --hidden-import ssl \
+            --hidden-import socket \
+            --hidden-import select \
+            --hidden-import email \
+            --hidden-import email.mime \
+            --hidden-import email.mime.text \
+            --hidden-import hashlib \
+            --hidden-import hmac \
+            --hidden-import secrets \
+            --hidden-import uuid \
+            --hidden-import mimetypes \
+            --hidden-import shutil \
+            --hidden-import tempfile \
+            --hidden-import glob \
+            --hidden-import fnmatch \
+            --hidden-import re \
+            --hidden-import string \
+            --hidden-import collections \
+            --hidden-import collections.abc \
+            --hidden-import queue \
+            --hidden-import io \
+            --hidden-import codecs \
+            --hidden-import encodings \
+            --hidden-import encodings.utf_8 \
+            --collect-all websockets \
+            --collect-all aiohttp \
             --collect-all http \
             --collect-all urllib \
             --collect-all datetime \
-            --strip \
+            --collect-all asyncio \
+            --collect-all logging \
+            --collect-all email \
             --exclude-module matplotlib \
             --exclude-module numpy \
             --exclude-module pandas \
@@ -210,12 +266,14 @@ jobs:
             --exclude-module PIL \
             --exclude-module cv2 \
             --exclude-module torch \
-            --exclude-module tensorflow
+            --exclude-module tensorflow \
+            --exclude-module IPython \
+            --exclude-module jupyter
       
       - name: 📦 Linux 릴리스 패키지 생성
         run: |
           mkdir release-linux
-          cp dist/ChzzkStreamDeck release-linux/
+          cp -r dist-linux/ChzzkStreamDeck/* release-linux/
           cp config_build.json release-linux/ || echo "config_build.json not found"
           cp README.md release-linux/ || echo "README.md not found"
           cp check_system.py release-linux/ || echo "check_system.py not found"
