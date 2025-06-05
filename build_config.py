@@ -14,7 +14,7 @@ from pathlib import Path
 class BuildConfig:
     def __init__(self):
         self.default_port = 8080
-        self.available_ports = [8080, 8081, 8082, 8083, 8084, 8085, 8090, 8091, 8092, 8093, 9000, 9001]
+        self.available_ports = [8080, 8081, 8082, 8083, 8084, 8085, 8090, 8091, 8092, 8093, 9000, 9001, 9090, 3000, 5000]
         self.config = self.get_clean_config()
     
     def get_clean_config(self):

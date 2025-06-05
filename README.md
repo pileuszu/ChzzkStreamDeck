@@ -55,7 +55,7 @@
 ### 포트 변경
 기본 포트(8080)가 사용 중인 경우:
 ```bash
-ChzzkStreamDeck.exe --port 8081
+ChzzkStreamDeck.exe --port <원하는포트번호> (예: 8081, 8082, 8083 등)
 ```
 
 ## 📋 시스템 요구사항

@@ -123,7 +123,7 @@ def main():
             print("  1. 관리자 권한으로 실행해보세요")
             print("  2. 바이러스 백신 예외에 추가하세요")
             print("  3. 포트 8080이 사용 중인지 확인하세요")
-            print("  4. 다른 포트로 실행해보세요: python run_chzzk.py --port 8081")
+            print("  4. 다른 포트로 실행해보세요: python run_chzzk.py --port 8081 (또는 8082, 8083 등)")
         
     except KeyboardInterrupt:
         print("\n👋 사용자가 프로그램을 중단했습니다.")

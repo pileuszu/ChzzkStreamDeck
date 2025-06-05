@@ -305,8 +305,14 @@ class AdminPanelLogicHandler(BaseHTTPRequestHandler):
 class AdminPanelManager:
     """관리자 패널 매니저"""
     
-    def __init__(self, port=8081):
-        self.port = port
+    def __init__(self, port=None):
+        # 포트가 제공되지 않으면 기본값 8080 사용
+        if port is None:
+            from config import CONFIG_MANAGER
+            config = CONFIG_MANAGER.get_config()
+            self.port = config.get('server', {}).get('port', 8080)
+        else:
+            self.port = port
         self.server = None
         self.server_thread = None
         self.is_running = False

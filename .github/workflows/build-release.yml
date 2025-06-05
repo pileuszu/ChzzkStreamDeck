@@ -129,7 +129,7 @@ jobs:
           ## Troubleshooting
           - If app doesn't start: Run as administrator
           - If Windows Defender blocks: Add folder to exclusions
-          - If port conflict: Use --port 8081 argument
+          - If port conflict: Use --port argument with available port (e.g., 8081, 8082, 8083)
           - If slow startup: Be patient on first run (normal behavior)
           "@ | Out-File -FilePath "release-windows\USER_GUIDE.md" -Encoding UTF8
       
