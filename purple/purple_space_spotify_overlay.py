@@ -30,25 +30,32 @@ def get_purple_space_template():
             width: 100%;
             height: 100%;
             background: 
-                /* 성운 효과 */
-                radial-gradient(ellipse at 20% 30%, rgba(138, 43, 226, 0.4) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 70%, rgba(75, 0, 130, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse at 40% 80%, rgba(147, 0, 211, 0.2) 0%, transparent 50%),
-                /* 별들 */
-                radial-gradient(2px 2px at 20% 40%, rgba(255, 255, 255, 0.9), transparent),
-                radial-gradient(1px 1px at 70% 20%, rgba(255, 255, 255, 0.7), transparent),
-                radial-gradient(1px 1px at 90% 60%, rgba(255, 255, 255, 0.8), transparent),
-                radial-gradient(2px 2px at 10% 80%, rgba(255, 255, 255, 0.6), transparent),
-                radial-gradient(1px 1px at 60% 90%, rgba(255, 255, 255, 0.9), transparent),
-                radial-gradient(1px 1px at 30% 10%, rgba(255, 255, 255, 0.8), transparent),
-                /* 우주 배경 */
-                linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 30%, #16213e 60%, #0f0f0f 100%);
+                /* 블랙홀 효과 */
+                radial-gradient(circle at 70% 20%, rgba(138, 43, 226, 0.6) 0%, rgba(75, 0, 130, 0.4) 30%, transparent 70%),
+                radial-gradient(circle at 30% 80%, rgba(147, 0, 211, 0.5) 0%, rgba(75, 0, 130, 0.3) 25%, transparent 60%),
+                /* 성운 스트림 */
+                conic-gradient(from 45deg at 50% 50%, 
+                    transparent, 
+                    rgba(138, 43, 226, 0.3), 
+                    rgba(255, 0, 255, 0.2), 
+                    rgba(0, 255, 255, 0.1), 
+                    transparent),
+                /* 별자리 */
+                radial-gradient(3px 3px at 15% 25%, rgba(255, 255, 255, 1), transparent),
+                radial-gradient(2px 2px at 85% 15%, rgba(255, 255, 255, 0.9), transparent),
+                radial-gradient(1px 1px at 75% 35%, rgba(255, 255, 255, 0.8), transparent),
+                radial-gradient(2px 2px at 25% 75%, rgba(255, 255, 255, 0.7), transparent),
+                radial-gradient(1px 1px at 90% 80%, rgba(255, 255, 255, 0.9), transparent),
+                radial-gradient(1px 1px at 5% 90%, rgba(255, 255, 255, 0.6), transparent),
+                radial-gradient(2px 2px at 60% 10%, rgba(255, 255, 255, 0.8), transparent),
+                radial-gradient(1px 1px at 40% 60%, rgba(255, 255, 255, 0.5), transparent),
+                /* 우주 심연 */
+                linear-gradient(135deg, #000000 0%, #1a0a2e 20%, #2d1b69 40%, #0f0f23 70%, #000000 100%);
             background-size: 
-                300px 300px, 400px 400px, 250px 250px,
-                200px 200px, 300px 300px, 250px 250px, 
-                150px 150px, 180px 180px, 220px 220px,
-                100% 100%;
-            animation: galaxyRotate 60s linear infinite, twinkle 3s ease-in-out infinite alternate;
+                400px 400px, 350px 350px, 500px 500px,
+                300px 300px, 250px 250px, 200px 200px, 
+                180px 180px, 220px 220px, 160px 160px, 100% 100%;
+            animation: cosmicRotation 80s linear infinite, starTwinkle 4s ease-in-out infinite alternate;
             z-index: -1;
         }
         
@@ -76,25 +83,34 @@ def get_purple_space_template():
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 420px;
-            min-height: 160px;
+            width: 450px;
+            min-height: 180px;
             background: 
+                radial-gradient(ellipse at 30% 20%, rgba(138, 43, 226, 0.3) 0%, transparent 70%),
+                radial-gradient(ellipse at 80% 80%, rgba(75, 0, 130, 0.25) 0%, transparent 60%),
                 linear-gradient(135deg, 
-                    rgba(138, 43, 226, 0.15) 0%,
-                    rgba(75, 0, 130, 0.25) 25%,
-                    rgba(30, 30, 60, 0.4) 50%,
-                    rgba(75, 0, 130, 0.25) 75%,
-                    rgba(138, 43, 226, 0.15) 100%);
-            border-radius: 25px;
-            padding: 25px;
-            border: 2px solid rgba(138, 43, 226, 0.6);
+                    rgba(0, 0, 0, 0.8) 0%,
+                    rgba(30, 30, 60, 0.6) 30%,
+                    rgba(138, 43, 226, 0.2) 60%,
+                    rgba(0, 0, 0, 0.9) 100%);
+            border-radius: 30px;
+            padding: 30px;
+            border: 3px solid;
+            border-image: linear-gradient(45deg, 
+                rgba(138, 43, 226, 0.8), 
+                rgba(255, 0, 255, 0.6), 
+                rgba(0, 255, 255, 0.4), 
+                rgba(138, 43, 226, 0.8)) 1;
             box-shadow: 
-                0 0 30px rgba(138, 43, 226, 0.4),
-                0 0 60px rgba(75, 0, 130, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
+                0 0 40px rgba(138, 43, 226, 0.5),
+                0 0 80px rgba(75, 0, 130, 0.4),
+                0 0 120px rgba(147, 0, 211, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
             position: relative;
             overflow: hidden;
+            animation: containerPulse 6s ease-in-out infinite alternate;
         }
         
         /* 홀로그램 효과 */
@@ -115,15 +131,16 @@ def get_purple_space_template():
             pointer-events: none;
         }
         
-        /* 우주선 장식 */
+        /* UFO 장식 */
         .spotify-container::after {
-            content: '🚀';
+            content: '🛸';
             position: absolute;
-            top: -10px;
-            right: -10px;
-            font-size: 24px;
-            animation: rocketFloat 6s ease-in-out infinite;
+            top: -35px;
+            right: -15px;
+            font-size: 30px;
+            animation: ufoFloat 8s ease-in-out infinite;
             z-index: 2;
+            filter: drop-shadow(0 0 15px rgba(138, 43, 226, 0.8));
         }
         
         /* 메인 콘텐츠 영역 */
@@ -274,14 +291,46 @@ def get_purple_space_template():
         }
         
         /* 애니메이션 정의 */
-        @keyframes galaxyRotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes cosmicRotation {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.05); }
+            100% { transform: rotate(360deg) scale(1); }
         }
         
-        @keyframes twinkle {
-            0% { opacity: 0.8; }
-            100% { opacity: 1; }
+        @keyframes starTwinkle {
+            0% { opacity: 0.6; filter: brightness(1); }
+            50% { opacity: 1; filter: brightness(1.5); }
+            100% { opacity: 0.8; filter: brightness(1); }
+        }
+        
+        @keyframes containerPulse {
+            0% { 
+                box-shadow: 
+                    0 0 40px rgba(138, 43, 226, 0.5),
+                    0 0 80px rgba(75, 0, 130, 0.4),
+                    0 0 120px rgba(147, 0, 211, 0.3);
+            }
+            100% { 
+                box-shadow: 
+                    0 0 60px rgba(138, 43, 226, 0.7),
+                    0 0 120px rgba(75, 0, 130, 0.6),
+                    0 0 180px rgba(147, 0, 211, 0.5);
+            }
+        }
+        
+        @keyframes albumGlow {
+            0% { 
+                box-shadow: 
+                    0 0 20px rgba(138, 43, 226, 0.6),
+                    0 0 40px rgba(75, 0, 130, 0.4),
+                    0 8px 25px rgba(0, 0, 0, 0.5);
+            }
+            100% { 
+                box-shadow: 
+                    0 0 30px rgba(138, 43, 226, 0.8),
+                    0 0 60px rgba(75, 0, 130, 0.6),
+                    0 8px 35px rgba(0, 0, 0, 0.7);
+            }
         }
         
         @keyframes dustFloat {
@@ -290,10 +339,9 @@ def get_purple_space_template():
         }
         
         @keyframes spaceMarquee {
-            0% { transform: translateX(100%); }
-            50% { transform: translateX(-200%); }
-            50.01% { transform: translateX(100%); }
-            100% { transform: translateX(100%); }
+            0% { transform: translateX(150%); }
+            50% { transform: translateX(-150%); }
+            100% { transform: translateX(150%); }
         }
         
         @keyframes hologramScan {
@@ -330,6 +378,40 @@ def get_purple_space_template():
         @keyframes planetOrbit2 {
             0% { transform: rotate(0deg) translateX(25px) rotate(0deg); }
             100% { transform: rotate(-360deg) translateX(25px) rotate(360deg); }
+        }
+        
+        @keyframes ufoFloat {
+            0%, 100% { 
+                transform: translateY(0px) translateX(0px) rotate(0deg);
+                filter: drop-shadow(0 0 15px rgba(138, 43, 226, 0.8));
+            }
+            25% { 
+                transform: translateY(-8px) translateX(5px) rotate(5deg);
+                filter: drop-shadow(0 0 25px rgba(138, 43, 226, 1));
+            }
+            50% { 
+                transform: translateY(-12px) translateX(-3px) rotate(-3deg);
+                filter: drop-shadow(0 0 20px rgba(255, 0, 255, 0.8));
+            }
+            75% { 
+                transform: translateY(-5px) translateX(8px) rotate(8deg);
+                filter: drop-shadow(0 0 30px rgba(0, 255, 255, 0.6));
+            }
+        }
+        
+        @keyframes nebulaShift {
+            0% { 
+                background-position: 0% 0%, 100% 100%, 50% 50%;
+                opacity: 0.6;
+            }
+            50% { 
+                background-position: 100% 50%, 0% 0%, 25% 75%;
+                opacity: 0.8;
+            }
+            100% { 
+                background-position: 0% 0%, 100% 100%, 50% 50%;
+                opacity: 0.6;
+            }
         }
         
         /* 숨김 상태 */

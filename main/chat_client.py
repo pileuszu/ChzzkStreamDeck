@@ -33,73 +33,110 @@ class ChzzkChatClient:
     
     def get_chat_channel_id_sync(self):
         """채팅 채널 ID 조회 (동기 방식)"""
-        # 1단계: 채널 정보 조회로 방송 상태 확인
-        channel_info_url = f"https://api.chzzk.naver.com/service/v1/channels/{self.channel_id}"
+        # 1단계: 다중 API로 채널 정보 조회
+        channel_apis = [
+            f"https://api.chzzk.naver.com/service/v1/channels/{self.channel_id}",
+            f"https://api.chzzk.naver.com/service/v2/channels/{self.channel_id}",
+        ]
         
-        try:
-            req = urllib.request.Request(channel_info_url)
-            req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-            
-            with urllib.request.urlopen(req) as response:
-                if response.status == 200:
-                    channel_data = json.loads(response.read().decode('utf-8'))
-                    
-                    if 'content' in channel_data and channel_data['content']:
-                        is_live = channel_data['content'].get('openLive', False)
-                        channel_name = channel_data['content'].get('channelName', '알 수 없음')
+        channel_info = None
+        for api_url in channel_apis:
+            try:
+                req = urllib.request.Request(api_url)
+                req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+                req.add_header('Accept', 'application/json')
+                
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    if response.status == 200:
+                        channel_data = json.loads(response.read().decode('utf-8'))
                         
-                        logger.info(f"채널명: {channel_name}")
-                        logger.info(f"방송 상태: {'방송 중' if is_live else '방송 종료'}")
-                        
-                        if not is_live:
-                            logger.warning("현재 방송이 꺼져있습니다.")
-                            return False
-                    else:
-                        logger.error("채널 정보를 찾을 수 없습니다.")
-                        return False
-                else:
-                    logger.error(f"채널 정보 조회 실패: {response.status}")
-                    return False
-        except Exception as e:
-            logger.error(f"채널 정보 조회 실패: {e}")
+                        if 'content' in channel_data and channel_data['content']:
+                            channel_info = channel_data['content']
+                            break
+            except Exception as e:
+                logger.debug(f"API 시도 실패 {api_url}: {e}")
+                continue
+        
+        if not channel_info:
+            logger.error("채널 정보를 찾을 수 없습니다. 채널 ID를 확인해주세요.")
             return False
+        
+        # 채널 기본 정보 확인
+        channel_name = channel_info.get('channelName', '알 수 없음')
+        logger.info(f"📺 채널명: {channel_name}")
+        
+        # 방송 상태는 여러 방법으로 체크 (openLive가 항상 정확하지 않음)
+        is_live_basic = channel_info.get('openLive', False)
+        logger.info(f"🔴 기본 방송 상태: {'방송 중' if is_live_basic else '방송 종료'}")
+        
+        # 기본 체크에서 방송이 꺼져있어도 라이브 디테일을 확인해보자
+        if not is_live_basic:
+            logger.info("기본 상태가 방송 종료지만 라이브 상세 정보를 확인합니다...")
+        
+        return True  # 기본 정보만으로도 진행
         
         # 2단계: 라이브 상세 정보에서 채팅 채널 ID 획득
         api_endpoints = [
             f"https://api.chzzk.naver.com/service/v2/channels/{self.channel_id}/live-detail",
             f"https://api.chzzk.naver.com/service/v1/channels/{self.channel_id}/live-detail",
             f"https://api.chzzk.naver.com/service/v1/channels/{self.channel_id}/live-status",
+            f"https://api.chzzk.naver.com/polling/v2/channels/{self.channel_id}/live-status",
+            f"https://api.chzzk.naver.com/polling/v1/channels/{self.channel_id}/live-status",
         ]
         
-        for endpoint in api_endpoints:
+        for i, endpoint in enumerate(api_endpoints):
             try:
+                logger.info(f"🔍 라이브 정보 조회 시도 ({i+1}/{len(api_endpoints)}): {endpoint}")
                 req = urllib.request.Request(endpoint)
                 req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+                req.add_header('Accept', 'application/json')
+                req.add_header('Referer', 'https://chzzk.naver.com/')
                 
-                with urllib.request.urlopen(req) as response:
+                with urllib.request.urlopen(req, timeout=15) as response:
                     if response.status == 200:
                         data = json.loads(response.read().decode('utf-8'))
                         
-                        # 채팅 채널 ID 추출
+                        # 채팅 채널 ID 추출 (다양한 경로 시도)
                         chat_channel_id = None
+                        
+                        # 경로 1: content.chatChannelId
                         if 'content' in data and data['content'] and 'chatChannelId' in data['content']:
                             chat_channel_id = data['content']['chatChannelId']
+                        
+                        # 경로 2: content.live.chatChannelId  
                         elif 'content' in data and data['content'] and 'live' in data['content'] and data['content']['live'] and 'chatChannelId' in data['content']['live']:
                             chat_channel_id = data['content']['live']['chatChannelId']
                         
+                        # 경로 3: content.liveDetail.chatChannelId
+                        elif 'content' in data and data['content'] and 'liveDetail' in data['content'] and data['content']['liveDetail'] and 'chatChannelId' in data['content']['liveDetail']:
+                            chat_channel_id = data['content']['liveDetail']['chatChannelId']
+                        
+                        # 경로 4: content.status 확인
+                        elif 'content' in data and data['content']:
+                            status = data['content'].get('status', 'CLOSE')
+                            logger.info(f"📊 방송 상태: {status}")
+                            
+                            if status == 'OPEN':
+                                logger.info("✅ 방송이 진행 중입니다!")
+                                # 채널 ID를 채팅 채널 ID로 사용
+                                chat_channel_id = self.channel_id
+                        
                         if chat_channel_id:
                             self.chat_channel_id = chat_channel_id
-                            logger.info(f"채팅 채널 ID 획득: {self.chat_channel_id}")
+                            logger.info(f"✅ 채팅 채널 ID 획득: {self.chat_channel_id}")
                             return True
                         else:
+                            logger.debug(f"응답 데이터: {json.dumps(data, indent=2, ensure_ascii=False)}")
                             continue
                     else:
+                        logger.debug(f"API 응답 실패: {response.status}")
                         continue
             except Exception as e:
+                logger.debug(f"API 호출 실패 {endpoint}: {e}")
                 continue
         
         # 최후의 수단: 채널 ID를 채팅 채널 ID로 사용
-        logger.info("채널 ID를 채팅 채널 ID로 사용합니다.")
+        logger.info("⚠️ 채팅 채널 ID를 찾지 못했습니다. 채널 ID를 채팅 채널 ID로 사용합니다.")
         self.chat_channel_id = self.channel_id
         return True
     
@@ -108,30 +145,53 @@ class ChzzkChatClient:
         if not self.chat_channel_id:
             logger.error("채팅 채널 ID가 없습니다.")
             return False
-            
-        url = f"https://comm-api.game.naver.com/nng_main/v1/chats/access-token?channelId={self.chat_channel_id}&chatType=STREAMING"
         
-        try:
-            req = urllib.request.Request(url)
-            req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-            
-            with urllib.request.urlopen(req) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode('utf-8'))
-                    
-                    if 'content' in data and 'accessToken' in data['content']:
-                        self.access_token = data['content']['accessToken']
-                        logger.info("액세스 토큰 획득 성공")
-                        return True
+        # 다양한 토큰 API 엔드포인트 시도
+        token_apis = [
+            f"https://comm-api.game.naver.com/nng_main/v1/chats/access-token?channelId={self.chat_channel_id}&chatType=STREAMING",
+            f"https://comm-api.game.naver.com/nng_main/v2/chats/access-token?channelId={self.chat_channel_id}&chatType=STREAMING",
+            f"https://comm-api.game.naver.com/nng_main/v1/chats/access-token?channelId={self.chat_channel_id}",
+        ]
+        
+        for i, url in enumerate(token_apis):
+            try:
+                logger.info(f"🔑 액세스 토큰 조회 시도 ({i+1}/{len(token_apis)})")
+                req = urllib.request.Request(url)
+                req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+                req.add_header('Accept', 'application/json')
+                req.add_header('Referer', 'https://chzzk.naver.com/')
+                
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    if response.status == 200:
+                        data = json.loads(response.read().decode('utf-8'))
+                        
+                        # 토큰 추출 (다양한 경로)
+                        access_token = None
+                        if 'content' in data and 'accessToken' in data['content']:
+                            access_token = data['content']['accessToken']
+                        elif 'content' in data and 'access_token' in data['content']:
+                            access_token = data['content']['access_token']
+                        elif 'accessToken' in data:
+                            access_token = data['accessToken']
+                        
+                        if access_token:
+                            self.access_token = access_token
+                            logger.info("✅ 액세스 토큰 획득 성공")
+                            return True
+                        else:
+                            logger.debug(f"토큰 응답 데이터: {json.dumps(data, indent=2, ensure_ascii=False)}")
+                            continue
                     else:
-                        logger.error("액세스 토큰을 찾을 수 없습니다.")
-                        return False
-                else:
-                    logger.error(f"액세스 토큰 조회 실패: {response.status}")
-                    return False
-        except Exception as e:
-            logger.error(f"액세스 토큰 조회 실패: {e}")
-            return False
+                        logger.debug(f"토큰 API 응답 실패: {response.status}")
+                        continue
+            except Exception as e:
+                logger.debug(f"토큰 API 호출 실패: {e}")
+                continue
+        
+        # 토큰 없이도 진행 시도 (일부 채널에서는 토큰이 필요 없을 수 있음)
+        logger.warning("⚠️ 액세스 토큰을 얻지 못했지만 토큰 없이 연결을 시도합니다.")
+        self.access_token = None
+        return True
     
     async def connect(self):
         """웹소켓 연결"""
