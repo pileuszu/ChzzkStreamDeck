@@ -199,6 +199,42 @@ class ConfigManager:
     def get_available_spotify_themes(self) -> list:
         """사용 가능한 Spotify 테마 목록 가져오기"""
         return self.get("modules.spotify.available_themes", [])
+    
+    def update_port(self, new_port: int):
+        """포트 변경 시 관련 URL들을 자동으로 업데이트"""
+        old_port = self.get_server_port()
+        if old_port == new_port:
+            return  # 포트가 같으면 아무것도 하지 않음
+        
+        # 서버 포트 업데이트
+        self.set("server.port", new_port)
+        
+        # Spotify 리다이렉트 URI 업데이트
+        old_redirect_uri = self.get("modules.spotify.redirect_uri", "")
+        if old_redirect_uri:
+            new_redirect_uri = old_redirect_uri.replace(f":{old_port}/", f":{new_port}/")
+            self.set("modules.spotify.redirect_uri", new_redirect_uri)
+            logger.info(f"Spotify 리다이렉트 URI 업데이트: {old_redirect_uri} -> {new_redirect_uri}")
+        
+        # 설정 저장
+        self.save_config()
+        logger.info(f"포트 변경 완료: {old_port} -> {new_port}")
+    
+    def get_full_url(self, path: str) -> str:
+        """전체 URL 생성 (현재 포트 기반)"""
+        host = self.get_server_host()
+        port = self.get_server_port()
+        return f"http://{host}:{port}{path}"
+    
+    def get_overlay_urls(self) -> dict:
+        """모든 오버레이 URL 반환"""
+        base_url = f"http://{self.get_server_host()}:{self.get_server_port()}"
+        return {
+            "admin": f"{base_url}/admin",
+            "chat": f"{base_url}/chat/overlay",
+            "spotify": f"{base_url}/spotify/overlay",
+            "spotify_callback": f"{base_url}/spotify/callback"
+        }
 
 # 전역 설정 관리자 인스턴스
 CONFIG_MANAGER = ConfigManager()

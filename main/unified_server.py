@@ -372,13 +372,42 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                         # Windows에서 부모 프로세스(CMD)도 함께 종료
                         if platform.system() == "Windows":
                             try:
-                                # 현재 프로세스와 부모 프로세스 모두 종료
+                                # 프로세스 트리 전체를 강제 종료
+                                current_process = psutil.Process(current_pid)
+                                parent_process = None
+                                
+                                # 부모 프로세스 확인 및 종료
+                                try:
+                                    parent_process = current_process.parent()
+                                    if parent_process and 'cmd.exe' in parent_process.name().lower():
+                                        print(f"🚪 CMD 창 종료 중: {parent_process.pid}")
+                                        subprocess.run(['taskkill', '/f', '/t', '/pid', str(parent_process.pid)], 
+                                                     shell=True, capture_output=True, timeout=2)
+                                except:
+                                    pass
+                                
+                                # 현재 프로세스 트리 전체 종료
                                 subprocess.run(['taskkill', '/f', '/t', '/pid', str(current_pid)], 
-                                            shell=True, capture_output=True, timeout=2)
-                                subprocess.run(['taskkill', '/f', '/t', '/pid', str(parent_pid)], 
-                                            shell=True, capture_output=True, timeout=2)
-                            except:
-                                pass
+                                             shell=True, capture_output=True, timeout=2)
+                                
+                                # 혹시 남은 부모 프로세스도 강제 종료
+                                if parent_process:
+                                    try:
+                                        subprocess.run(['taskkill', '/f', '/pid', str(parent_process.pid)], 
+                                                     shell=True, capture_output=True, timeout=1)
+                                    except:
+                                        pass
+                                    
+                            except Exception as clean_ex:
+                                print(f"⚠️  Windows 정리 중 오류: {clean_ex}")
+                                # 최후의 수단: 프로세스 이름으로 전체 종료
+                                try:
+                                    subprocess.run(['taskkill', '/f', '/im', 'ChzzkStreamDeck.exe'], 
+                                                 shell=True, capture_output=True, timeout=1)
+                                    subprocess.run(['taskkill', '/f', '/im', 'cmd.exe'], 
+                                                 shell=True, capture_output=True, timeout=1)
+                                except:
+                                    pass
                         
                         # 바로 강제 종료
                         os._exit(0)
@@ -396,6 +425,83 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 
                 response = {"success": False, "message": f"앱 종료 실패: {e}"}
                 self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+        
+        elif parsed_path.path == '/api/config/update':
+            # 설정 업데이트 API
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length > 0:
+                post_data = self.rfile.read(content_length)
+                try:
+                    update_data = json.loads(post_data.decode('utf-8'))
+                    
+                    # 기존 설정 백업
+                    old_config = config_manager.config.copy()
+                    
+                    # 설정 업데이트
+                    for key, value in update_data.items():
+                        if '.' in key:
+                            config_manager.set(key, value)
+                        else:
+                            config_manager.config[key] = value
+                    
+                    # 설정 저장
+                    success = config_manager.save_config()
+                    
+                    if success:
+                        # 채팅 설정이 변경된 경우 서비스 재시작
+                        if any(key.startswith('modules.chat.') for key in update_data.keys()):
+                            logger.info("채팅 설정 변경 감지 - 서비스 재시작 중...")
+                            if services_running.get('chat', False):
+                                self._stop_module('chat')
+                                time.sleep(0.5)  # 잠시 대기
+                                if config_manager.is_module_enabled('chat'):
+                                    self._start_module('chat')
+                                    logger.info("채팅 서비스 재시작 완료")
+                        
+                        # Spotify 설정이 변경된 경우 서비스 재시작
+                        if any(key.startswith('modules.spotify.') for key in update_data.keys()):
+                            logger.info("Spotify 설정 변경 감지 - 서비스 재시작 중...")
+                            if services_running.get('spotify', False):
+                                self._stop_module('spotify')
+                                time.sleep(0.5)  # 잠시 대기
+                                if config_manager.is_module_enabled('spotify'):
+                                    self._start_module('spotify')
+                                    logger.info("Spotify 서비스 재시작 완료")
+                        
+                        self.send_response(200)
+                        self.send_header('Content-type', 'application/json; charset=utf-8')
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        response = {"success": True, "message": "설정이 업데이트되었습니다."}
+                        self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                    else:
+                        # 설정 저장 실패 시 롤백
+                        config_manager.config = old_config
+                        self.send_response(500)
+                        self.send_header('Content-type', 'application/json; charset=utf-8')
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        response = {"success": False, "message": "설정 저장에 실패했습니다."}
+                        self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                        
+                except json.JSONDecodeError:
+                    self.send_response(400)
+                    self.send_header('Content-type', 'application/json; charset=utf-8')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    response = {"success": False, "message": "잘못된 JSON 데이터입니다."}
+                    self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                except Exception as e:
+                    logger.error(f"설정 업데이트 오류: {e}")
+                    self.send_response(500)
+                    self.send_header('Content-type', 'application/json; charset=utf-8')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    response = {"success": False, "message": f"설정 업데이트 오류: {e}"}
+                    self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+            else:
+                self.send_response(400)
+            self.end_headers()
         
         else:
             self.send_response(404)
@@ -423,10 +529,19 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
         try:
             if module_name == 'chat':
                 services_running['chat'] = False
+                # 채팅 클라이언트 정리
+                if hasattr(server_manager, 'chat_task') and server_manager.chat_task:
+                    server_manager.chat_task.cancel()
+                    server_manager.chat_task = None
+                if hasattr(server_manager, 'chat_client') and server_manager.chat_client:
+                    server_manager.chat_client = None
                 logger.info(f"💬 {module_name} 정지됨")
                 return True
             elif module_name == 'spotify':
                 services_running['spotify'] = False
+                # 스포티파이 업데이트 스레드 정리
+                if hasattr(server_manager, 'spotify_update_thread') and server_manager.spotify_update_thread:
+                    server_manager.spotify_update_thread = None
                 logger.info(f"🎵 {module_name} 정지됨")
                 return True
             return False
@@ -1326,10 +1441,42 @@ def main():
             # Windows에서 추가 정리
             if platform.system() == "Windows":
                 try:
-                    subprocess.run(['taskkill', '/f', '/pid', str(current_pid)], 
-                                 shell=True, capture_output=True, timeout=3)
-                except:
-                    pass
+                    # 프로세스 트리 전체를 강제 종료
+                    current_process = psutil.Process(current_pid)
+                    parent_process = None
+                    
+                    # 부모 프로세스 확인 및 종료
+                    try:
+                        parent_process = current_process.parent()
+                        if parent_process and 'cmd.exe' in parent_process.name().lower():
+                            print(f"🚪 CMD 창 종료 중: {parent_process.pid}")
+                            subprocess.run(['taskkill', '/f', '/t', '/pid', str(parent_process.pid)], 
+                                         shell=True, capture_output=True, timeout=2)
+                    except:
+                        pass
+                    
+                    # 현재 프로세스 트리 전체 종료
+                    subprocess.run(['taskkill', '/f', '/t', '/pid', str(current_pid)], 
+                                 shell=True, capture_output=True, timeout=2)
+                    
+                    # 혹시 남은 부모 프로세스도 강제 종료
+                    if parent_process:
+                        try:
+                            subprocess.run(['taskkill', '/f', '/pid', str(parent_process.pid)], 
+                                         shell=True, capture_output=True, timeout=1)
+                        except:
+                            pass
+                                
+                except Exception as clean_ex:
+                    print(f"⚠️  Windows 정리 중 오류: {clean_ex}")
+                    # 최후의 수단: 프로세스 이름으로 전체 종료
+                    try:
+                        subprocess.run(['taskkill', '/f', '/im', 'ChzzkStreamDeck.exe'], 
+                                     shell=True, capture_output=True, timeout=1)
+                        subprocess.run(['taskkill', '/f', '/im', 'cmd.exe'], 
+                                     shell=True, capture_output=True, timeout=1)
+                    except:
+                        pass
             
             print("✅ 정리 완료")
             
@@ -1380,6 +1527,10 @@ def main():
     if args.port != 8080:
         config_manager.config["server"]["port"] = args.port
         print(f"🔧 포트 설정: {args.port}")
+        
+        # 포트 변경 시 관련 URL들도 업데이트
+        config_manager.update_port(args.port)
+        print(f"🔗 관련 URL들 자동 업데이트 완료")
     
     if server_manager.start_server():
         # 모듈 자동 시작 비활성화 - 수동 시작만 허용
@@ -1452,13 +1603,42 @@ def start_desktop_app(port):
                 # Windows에서 부모 프로세스(CMD)도 함께 종료
                 if platform.system() == "Windows":
                     try:
-                        # 현재 프로세스와 부모 프로세스 모두 종료
+                        # 프로세스 트리 전체를 강제 종료
+                        current_process = psutil.Process(current_pid)
+                        parent_process = None
+                        
+                        # 부모 프로세스 확인 및 종료
+                        try:
+                            parent_process = current_process.parent()
+                            if parent_process and 'cmd.exe' in parent_process.name().lower():
+                                print(f"🚪 CMD 창 종료 중: {parent_process.pid}")
+                                subprocess.run(['taskkill', '/f', '/t', '/pid', str(parent_process.pid)], 
+                                             shell=True, capture_output=True, timeout=2)
+                        except:
+                            pass
+                        
+                        # 현재 프로세스 트리 전체 종료
                         subprocess.run(['taskkill', '/f', '/t', '/pid', str(current_pid)], 
                                      shell=True, capture_output=True, timeout=2)
-                        subprocess.run(['taskkill', '/f', '/t', '/pid', str(parent_pid)], 
-                                     shell=True, capture_output=True, timeout=2)
-                    except:
-                        pass
+                        
+                        # 혹시 남은 부모 프로세스도 강제 종료
+                        if parent_process:
+                            try:
+                                subprocess.run(['taskkill', '/f', '/pid', str(parent_process.pid)], 
+                                             shell=True, capture_output=True, timeout=1)
+                            except:
+                                pass
+                                
+                    except Exception as clean_ex:
+                        print(f"⚠️  Windows 정리 중 오류: {clean_ex}")
+                        # 최후의 수단: 프로세스 이름으로 전체 종료
+                        try:
+                            subprocess.run(['taskkill', '/f', '/im', 'ChzzkStreamDeck.exe'], 
+                                                 shell=True, capture_output=True, timeout=1)
+                            subprocess.run(['taskkill', '/f', '/im', 'cmd.exe'], 
+                                                 shell=True, capture_output=True, timeout=1)
+                        except:
+                            pass
                 
                 # 4. 바로 강제 종료
                 print("강제 종료 실행")
