@@ -21,7 +21,7 @@
 3. Windows Defender 경고 시 "추가 정보" → "실행" 클릭
 
 ### 2. 기본 설정
-1. 관리패널이 자동으로 열림 (http://localhost:8080/admin)
+1. 관리패널이 자동으로 열림 (포트는 실행 시 표시됨)
 2. 필요한 정보 입력:
    - **치지직 채널 ID**: 채팅을 가져올 채널 ID
    - **Spotify 클라이언트 정보**: 음악 정보 연동용
@@ -32,8 +32,8 @@
 ### 3. OBS 설정
 1. 소스 추가 → **브라우저 소스**
 2. URL 입력:
-   - **채팅 오버레이**: `http://localhost:8080/chat/overlay`
-   - **Spotify 오버레이**: `http://localhost:8080/spotify/overlay`
+   - **채팅 오버레이**: 관리패널에서 URL 복사
+- **Spotify 오버레이**: 관리패널에서 URL 복사
 3. 해상도: 1920x1080 권장
 4. **사용자 지정 CSS** 및 **투명 배경** 체크
 
@@ -45,7 +45,7 @@
 ### Spotify 연동 설정
 1. [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) 접속
 2. "Create app" 클릭하여 새 앱 생성
-3. 앱 설정에서 Redirect URI 추가: `http://localhost:8080/spotify/callback`
+3. 앱 설정에서 Redirect URI 추가: 관리패널에 표시된 URI 사용
 4. Client ID와 Client Secret을 관리패널에 입력
 5. Spotify 계정 인증 완료
 

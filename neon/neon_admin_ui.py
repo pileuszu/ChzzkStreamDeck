@@ -545,7 +545,7 @@ def get_neon_admin_template():
                         <div class="url-label">OBS 브라우저 소스 URL</div>
                         <div class="url-content">
                             <div class="url-text" id="chat-url">
-                                http://localhost:8080/chat/overlay
+                                <!-- URL will be updated dynamically -->
                             </div>
                             <button class="copy-btn" onclick="copyToClipboard('chat-url')">복사</button>
                         </div>
@@ -574,7 +574,7 @@ def get_neon_admin_template():
                     </div>
                     <div class="form-group">
                         <label>리다이렉트 URI</label>
-                        <input type="text" id="spotify-redirect-uri" placeholder="http://localhost:8080/spotify/callback">
+                        <input type="text" id="spotify-redirect-uri" placeholder="Redirect URI (자동 설정됨)">
                     </div>
                     <div class="form-group">
                         <label>테마 선택</label>
@@ -588,7 +588,7 @@ def get_neon_admin_template():
                         <div class="url-label">OBS 브라우저 소스 URL</div>
                         <div class="url-content">
                             <div class="url-text" id="spotify-url">
-                                http://localhost:8080/spotify/overlay
+                                <!-- URL will be updated dynamically -->
                             </div>
                             <button class="copy-btn" onclick="copyToClipboard('spotify-url')">복사</button>
                         </div>
@@ -801,13 +801,21 @@ def get_neon_admin_template():
                 return;
             }
             
-            const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=http://localhost:8080/spotify/callback&scope=user-read-currently-playing user-read-playback-state&show_dialog=true`;
+                            const serverInfo = await fetch('/api/config').then(r => r.json());
+                const currentPort = serverInfo.server?.port || 8080;
+                const redirectUri = `http://localhost:${currentPort}/spotify/callback`;
+                const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=user-read-currently-playing user-read-playback-state&show_dialog=true`;
             window.open(authUrl, '_blank');
         }
         
         function updateUI() {
             // 서버 포트 표시
-            document.getElementById('serverPort').textContent = currentConfig.server?.port || 8080;
+            const currentPort = currentConfig.server?.port || 8080;
+            document.getElementById('serverPort').textContent = currentPort;
+            
+            // URL 업데이트 (동적 포트 반영)
+            document.getElementById('chat-url').textContent = `http://localhost:${currentPort}/chat/overlay`;
+            document.getElementById('spotify-url').textContent = `http://localhost:${currentPort}/spotify/overlay`;
             
             // 모듈별 설정 업데이트
             const modules = currentConfig.modules || {};
@@ -827,7 +835,9 @@ def get_neon_admin_template():
             if (modules.spotify) {
                 document.getElementById('spotify-client-id').value = modules.spotify.client_id || '';
                 document.getElementById('spotify-client-secret').value = modules.spotify.client_secret || '';
-                document.getElementById('spotify-redirect-uri').value = modules.spotify.redirect_uri || '';
+                // Redirect URI를 현재 포트로 자동 설정
+                const redirectUri = `http://localhost:${currentPort}/spotify/callback`;
+                document.getElementById('spotify-redirect-uri').value = modules.spotify.redirect_uri || redirectUri;
                 document.getElementById('spotify-theme').value = modules.spotify.theme || 'default';
             }
         }

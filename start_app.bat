@@ -21,7 +21,7 @@ if exist "ChzzkStreamDeck.exe" (
     pause
     
     echo 📱 데스크톱 앱 모드로 관리패널이 열립니다
-    echo 💡 만약 앱이 열리지 않으면 http://localhost:8080/admin 브라우저로 접속하세요
+    echo 💡 만약 앱이 열리지 않으면 관리패널에 접속하세요
     
 ) else if exist "main.py" (
     echo ⚠️  실행 파일을 찾을 수 없습니다. 개발 모드로 실행합니다.
@@ -59,7 +59,7 @@ if exist "ChzzkStreamDeck.exe" (
 
 echo.
 echo 🎉 ChzzkStreamDeck이 실행되었습니다!
-echo 📱 관리패널: http://localhost:8080/admin
+echo 📱 관리패널: 화면에 표시된 URL을 확인하세요
 echo.
 echo 💡 앱을 종료하려면 이 창을 닫거나 Ctrl+C를 누르세요
 echo ============================================

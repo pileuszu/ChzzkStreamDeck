@@ -539,7 +539,7 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                             <h1>✅ Spotify 인증 완료!</h1>
                             <p>이제 OBS에서 오버레이를 사용할 수 있습니다.</p>
                             <p><strong>OBS 브라우저 소스 URL:</strong></p>
-                            <p><code>http://localhost:8080/spotify/overlay</code></p>
+                            <p><code>http://localhost:{config_manager.get_server_port()}/spotify/overlay</code></p>
                             <div class="message">이 창을 닫고 관리패널에서 Spotify 모듈 상태를 확인하세요.</div>
                         </div>
                         <script>
