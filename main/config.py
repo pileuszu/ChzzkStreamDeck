@@ -57,6 +57,11 @@ DEFAULT_CONFIG = {
                     "id": "purple_compact",
                     "name": "퍼플 컴팩트",
                     "description": "보라색 한 줄 컴팩트 스타일"
+                },
+                {
+                    "id": "purple_space",
+                    "name": "퍼플 스페이스",
+                    "description": "우주인 컨셉의 보라색 테마 🚀👨‍🚀"
                 }
             ]
         }
