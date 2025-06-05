@@ -291,7 +291,7 @@ def get_purple_space_template():
         
         @keyframes spaceMarquee {
             0% { transform: translateX(100%); }
-            50% { transform: translateX(-100%); }
+            50% { transform: translateX(-200%); }
             50.01% { transform: translateX(100%); }
             100% { transform: translateX(100%); }
         }

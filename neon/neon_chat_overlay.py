@@ -13,7 +13,7 @@ import os
 
 # 경로 추가
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'main'))
-from config import AppConfig
+from config import ConfigManager
 
 # 로깅 설정
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -395,7 +395,7 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
             if main_dir not in sys.path:
                 sys.path.insert(0, main_dir)
             
-            from config import config_manager
+            from config import config_manager, ConfigManager
             
             # 채팅 모듈 설정 가져오기
             chat_config = config_manager.get_module_config('chat')
@@ -1490,7 +1490,7 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
 def start_http_server():
     """HTTP 서버 시작"""
-    config = AppConfig()
+    config = ConfigManager()
     port = config.get_server_port()
     
     try:
@@ -1509,7 +1509,7 @@ def start_http_server():
 
 async def start_chat_overlay():
     """채팅 오버레이 시작"""
-    config = AppConfig()
+    config = ConfigManager()
     port = config.get_server_port()
     
     channel_id = "789d1d9c5b58c847f9f18c8e5073c580"
