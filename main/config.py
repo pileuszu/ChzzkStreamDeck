@@ -8,42 +8,12 @@
 import json
 import os
 import logging
-import sys
 from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-def get_config_file_path():
-    """설정 파일의 올바른 경로 반환 (안전한 버전)"""
-    config_filename = "overlay_config.json"
-    
-    try:
-        # PyInstaller 환경인지 확인
-        if getattr(sys, 'frozen', False):
-            # 실행 파일이 있는 디렉토리 사용
-            try:
-                executable_dir = os.path.dirname(sys.executable)
-                config_path = os.path.join(executable_dir, config_filename)
-                
-                # 경로 접근 가능한지 테스트
-                if os.path.exists(os.path.dirname(config_path)) and os.access(os.path.dirname(config_path), os.W_OK):
-                    return config_path
-                else:
-                    # 쓰기 권한이 없으면 현재 디렉토리 사용
-                    return config_filename
-            except Exception:
-                # 실패하면 현재 디렉토리 사용
-                return config_filename
-        else:
-            # 개발 환경에서는 현재 작업 디렉토리 사용
-            return config_filename
-    
-    except Exception:
-        # 모든 실패 시 기본값 반환
-        return config_filename
-
 # 기본 설정 파일 경로
-CONFIG_FILE = get_config_file_path()
+CONFIG_FILE = "overlay_config.json"
 
 # 기본 설정값
 DEFAULT_CONFIG = {
@@ -229,42 +199,54 @@ class ConfigManager:
     def get_available_spotify_themes(self) -> list:
         """사용 가능한 Spotify 테마 목록 가져오기"""
         return self.get("modules.spotify.available_themes", [])
-    
+
     def update_port(self, new_port: int):
-        """포트 변경 시 관련 URL들을 자동으로 업데이트"""
+        """포트 변경 시 관련 URL들 자동 업데이트"""
         old_port = self.get_server_port()
-        if old_port == new_port:
-            return  # 포트가 같으면 아무것도 하지 않음
         
-        # 서버 포트 업데이트
+        if old_port == new_port:
+            return  # 포트가 같으면 업데이트 불필요
+        
+        logger.info(f"포트 변경: {old_port} → {new_port}")
+        
+        # 1. 서버 포트 업데이트
         self.set("server.port", new_port)
         
-        # Spotify 리다이렉트 URI 업데이트
-        old_redirect_uri = self.get("modules.spotify.redirect_uri", "")
-        if old_redirect_uri:
-            new_redirect_uri = old_redirect_uri.replace(f":{old_port}/", f":{new_port}/")
+        # 2. Spotify redirect URI 업데이트
+        current_redirect_uri = self.get("modules.spotify.redirect_uri", "")
+        if current_redirect_uri:
+            # 기존 URI에서 포트 부분만 교체
+            import re
+            new_redirect_uri = re.sub(
+                r'localhost:\d+', 
+                f'localhost:{new_port}', 
+                current_redirect_uri
+            )
             self.set("modules.spotify.redirect_uri", new_redirect_uri)
-            logger.info(f"Spotify 리다이렉트 URI 업데이트: {old_redirect_uri} -> {new_redirect_uri}")
+            logger.info(f"Spotify redirect URI 업데이트: {current_redirect_uri} → {new_redirect_uri}")
+        else:
+            # redirect URI가 없으면 기본값으로 설정
+            default_redirect_uri = f"http://localhost:{new_port}/spotify/callback"
+            self.set("modules.spotify.redirect_uri", default_redirect_uri)
+            logger.info(f"Spotify redirect URI 기본값 설정: {default_redirect_uri}")
         
-        # 설정 저장
+        # 3. 설정 파일 저장
         self.save_config()
-        logger.info(f"포트 변경 완료: {old_port} -> {new_port}")
+        logger.info("포트 변경에 따른 설정 업데이트 완료")
+
+    def get_base_url(self) -> str:
+        """현재 서버의 기본 URL 반환"""
+        return f"http://{self.get_server_host()}:{self.get_server_port()}"
     
-    def get_full_url(self, path: str) -> str:
-        """전체 URL 생성 (현재 포트 기반)"""
-        host = self.get_server_host()
-        port = self.get_server_port()
-        return f"http://{host}:{port}{path}"
+    def get_module_url(self, module_name: str) -> str:
+        """특정 모듈의 전체 URL 반환"""
+        module_config = self.get_module_config(module_name)
+        url_path = module_config.get("url_path", f"/{module_name}")
+        return f"{self.get_base_url()}{url_path}"
     
-    def get_overlay_urls(self) -> dict:
-        """모든 오버레이 URL 반환"""
-        base_url = f"http://{self.get_server_host()}:{self.get_server_port()}"
-        return {
-            "admin": f"{base_url}/admin",
-            "chat": f"{base_url}/chat/overlay",
-            "spotify": f"{base_url}/spotify/overlay",
-            "spotify_callback": f"{base_url}/spotify/callback"
-        }
+    def get_overlay_url(self, module_name: str) -> str:
+        """특정 모듈의 오버레이 URL 반환"""
+        return f"{self.get_module_url(module_name)}/overlay"
 
 # 전역 설정 관리자 인스턴스
 CONFIG_MANAGER = ConfigManager()
