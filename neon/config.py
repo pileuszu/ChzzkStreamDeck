@@ -12,58 +12,60 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# 환경 변수 로드 함수
-def load_env_file(env_path=".env"):
-    """
-    .env 파일에서 환경 변수를 로드합니다.
-    """
-    if os.path.exists(env_path):
-        with open(env_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    os.environ[key.strip()] = value.strip()
-
-# .env 파일 로드
-load_env_file()
-
 # 기본 설정 파일 경로
-CONFIG_FILE = "neon_overlay_config.json"
+CONFIG_FILE = "overlay_config.json"
 
-# 기본 설정값 (환경 변수 우선)
+# 기본 설정값
 DEFAULT_CONFIG = {
     "server": {
-        "port": int(os.getenv("SERVER_PORT", "8080")),
-        "host": os.getenv("SERVER_HOST", "localhost")
+        "port": 8080,
+        "host": "localhost"
     },
     "modules": {
         "chat": {
             "enabled": False,
-            "channel_id": os.getenv("NAVER_CHAT_CHANNEL_ID", ""),
-            "url_path": "/chat"
+            "channel_id": "",
+            "url_path": "/chat",
+            "max_messages": 10,
+            "show_recent_only": True
         },
         "spotify": {
             "enabled": False,
-            "client_id": os.getenv("SPOTIFY_CLIENT_ID", ""),
-            "client_secret": os.getenv("SPOTIFY_CLIENT_SECRET", ""),
-            "redirect_uri": f"http://{os.getenv('SERVER_HOST', 'localhost')}:{os.getenv('SERVER_PORT', '8080')}/spotify/callback",
-            "url_path": "/spotify"
-        },
-        "background_effect_1": {
-            "enabled": False,
-            "intensity": 0.5,
-            "url_path": "/background1"
-        },
-        "background_effect_2": {
-            "enabled": False,
-            "intensity": 0.3,
-            "url_path": "/background2"
+            "client_id": "",
+            "client_secret": "",
+            "redirect_uri": "http://localhost:8080/spotify/callback",
+            "url_path": "/spotify",
+            "simplified_mode": False,
+            "theme": "default",
+            "available_themes": [
+                {
+                    "id": "default",
+                    "name": "기본 네온 테마",
+                    "description": "기본 네온 글로우 스타일"
+                },
+                {
+                    "id": "minimal",
+                    "name": "미니멀 테마",
+                    "description": "깔끔한 미니멀 디자인"
+                },
+                {
+                    "id": "retro",
+                    "name": "레트로 테마",
+                    "description": "80년대 신스웨이브 스타일"
+                },
+                {
+                    "id": "glass",
+                    "name": "글래스모피즘",
+                    "description": "투명한 글래스 효과"
+                }
+            ]
         }
     },
     "ui": {
         "theme": "neon",
-        "language": "ko"
+        "language": "ko",
+        "chat_background": "transparent",
+        "dark_mode": True
     }
 }
 
@@ -176,6 +178,18 @@ class ConfigManager:
     def update_chat_channel(self, channel_id: str):
         """채팅 채널 ID 업데이트"""
         self.set("modules.chat.channel_id", channel_id)
+    
+    def get_spotify_theme(self) -> str:
+        """현재 Spotify 테마 가져오기"""
+        return self.get("modules.spotify.theme", "default")
+    
+    def set_spotify_theme(self, theme_id: str):
+        """Spotify 테마 설정"""
+        self.set("modules.spotify.theme", theme_id)
+    
+    def get_available_spotify_themes(self) -> list:
+        """사용 가능한 Spotify 테마 목록 가져오기"""
+        return self.get("modules.spotify.available_themes", [])
 
 # 전역 설정 관리자 인스턴스
 config_manager = ConfigManager() 

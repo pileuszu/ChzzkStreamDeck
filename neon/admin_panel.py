@@ -429,7 +429,8 @@ class AdminPanelHandler(http.server.SimpleHTTPRequestHandler):
         }
         
         .form-group input,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 12px 15px;
             background: rgba(0, 0, 0, 0.3);
@@ -441,10 +442,17 @@ class AdminPanelHandler(http.server.SimpleHTTPRequestHandler):
         }
         
         .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #00FFAF;
             box-shadow: 0 0 20px rgba(0, 255, 175, 0.3);
+        }
+        
+        .form-group select option {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
         }
         
         /* URL 표시 영역 개선 */
@@ -681,6 +689,15 @@ class AdminPanelHandler(http.server.SimpleHTTPRequestHandler):
                     <label>리다이렉트 URI</label>
                     <input type="text" id="spotify-redirect-uri" placeholder="http://localhost:8080/spotify/callback">
                 </div>
+                <div class="form-group">
+                    <label>테마 선택</label>
+                    <select id="spotify-theme">
+                        <option value="default">기본 네온 테마</option>
+                        <option value="minimal">미니멀 테마</option>
+                        <option value="retro">레트로 테마</option>
+                        <option value="glass">글래스모피즘</option>
+                    </select>
+                </div>
                 <div class="url-container">
                     <div class="url-label">OBS 브라우저 소스 URL</div>
                     <div class="url-content">
@@ -876,6 +893,7 @@ class AdminPanelHandler(http.server.SimpleHTTPRequestHandler):
                 document.getElementById('spotify-client-id').value = modules.spotify.client_id || '';
                 document.getElementById('spotify-client-secret').value = modules.spotify.client_secret || '';
                 document.getElementById('spotify-redirect-uri').value = modules.spotify.redirect_uri || '';
+                document.getElementById('spotify-theme').value = modules.spotify.theme || 'default';
             }
         }
         
@@ -887,6 +905,7 @@ class AdminPanelHandler(http.server.SimpleHTTPRequestHandler):
                 currentConfig.modules.spotify.client_id = document.getElementById('spotify-client-id').value;
                 currentConfig.modules.spotify.client_secret = document.getElementById('spotify-client-secret').value;
                 currentConfig.modules.spotify.redirect_uri = document.getElementById('spotify-redirect-uri').value;
+                currentConfig.modules.spotify.theme = document.getElementById('spotify-theme').value;
             }
             
             try {
@@ -934,7 +953,7 @@ class AdminPanelHandler(http.server.SimpleHTTPRequestHandler):
             const url = URL.createObjectURL(dataBlob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'neon_overlay_config.json';
+            link.download = 'overlay_config.json';
             link.click();
             URL.revokeObjectURL(url);
         }
