@@ -884,8 +884,13 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
         # 로그 메시지 비활성화
         pass
 
-def start_http_server(port=8080):
+def start_http_server(port=None):
     """HTTP 서버 시작"""
+    if port is None:
+        from config import AppConfig
+        config = AppConfig()
+        port = config.get_server_port()
+        
     try:
         server = http.server.ThreadingHTTPServer(("", port), OverlayHTTPHandler)
         server.timeout = 10
@@ -899,8 +904,13 @@ def start_http_server(port=8080):
     except Exception as e:
         logger.error(f"❌ HTTP 서버 오류: {e}")
 
-def run_server_thread(port=8080):
+def run_server_thread(port=None):
     """HTTP 서버를 별도 스레드에서 실행"""
+    if port is None:
+        from config import AppConfig
+        config = AppConfig()
+        port = config.get_server_port()
+        
     server_thread = threading.Thread(target=start_http_server, args=(port,), daemon=True)
     server_thread.start()
     return server_thread 

@@ -481,7 +481,7 @@ def get_neon_admin_template():
             <h2>🌐 서버 상태</h2>
             <div class="server-info">
                 <div>
-                    <strong>서버 주소:</strong> <span id="serverAddress">http://localhost:<span id="serverPort">8080</span></span>
+                    <strong>서버 주소:</strong> <span id="serverAddress">http://localhost:<span id="serverPort">loading...</span></span>
                 </div>
                 <div>
                     <strong>상태:</strong> <span class="status-indicator active"></span>실행 중

@@ -11,44 +11,65 @@ import os
 import sys
 from pathlib import Path
 
+# main 폴더를 Python 경로에 추가
+sys.path.append(os.path.join(os.path.dirname(__file__), 'main'))
+
 class BuildConfig:
     def __init__(self):
         self.default_port = 8080
         self.available_ports = [8080, 8081, 8082, 8083, 8084, 8085, 8090, 8091, 8092, 8093, 9000, 9001, 9090, 3000, 5000]
-        self.config = self.get_clean_config()
-    
-    def get_clean_config(self):
-        """민감한 정보를 제거한 깨끗한 설정 반환"""
+        
+        # 동적으로 config 가져오기 (실행 시에만)
+        try:
+            from config import AppConfig
+            config = AppConfig()
+            self.current_port = config.get_server_port()
+        except:
+            # 빌드 시에는 기본값 사용
+            self.current_port = self.default_port
+            
+    def get_build_config(self):
+        """빌드용 설정 반환"""
         return {
+            "name": "ChzzkStreamDeck",
+            "version": "2.0.0",
+            "description": "치지직 스트림덱 - 채팅 오버레이 & 관리 패널",
+            "main": "main/unified_server.py",
+            "scripts": {
+                "start": "python main/unified_server.py",
+                "dev": "python main/unified_server.py --debug"
+            },
+            "dependencies": [
+                "aiohttp>=3.8.0",
+                "websockets>=10.0",
+                "requests>=2.28.0",
+                "pywebview>=4.0.0",
+                "pythonnet>=3.0.0"
+            ],
+            "build": {
+                "directories": {
+                    "output": "dist"
+                },
+                "files": [
+                    "main/**/*",
+                    "neon/**/*",
+                    "static/**/*",
+                    "config.json",
+                    "requirements.txt",
+                    "README.md"
+                ]
+            },
             "server": {
-                "host": "localhost", 
-                "port": self.default_port,
-                "auto_open_browser": True
+                "port": self.current_port,
+                "host": "localhost"
             },
             "modules": {
-                "chat": {
-                    "enabled": True,
-                    "url_path": "/chat",
-                    "channel_id": "",  # 사용자가 입력해야 함
-                    "max_messages": 10,
-                    "single_chat_mode": False,
-                    "streamer_align_left": False,
-                    "background_enabled": True,
-                    "background_opacity": 0.3,
-                    "remove_outer_effects": False
-                },
                 "spotify": {
-                    "enabled": True,
-                    "url_path": "/spotify",
-                    "client_id": "",  # 사용자가 입력해야 함
-                    "client_secret": "",  # 사용자가 입력해야 함
-                    "redirect_uri": "http://localhost:8080/spotify/callback",
-                    "theme": "neon"
+                    "client_id": "",
+                    "client_secret": "",
+                    "redirect_uri": f"http://localhost:{self.current_port}/spotify/callback",
+                    "enabled": False
                 }
-            },
-            "ui": {
-                "theme": "neon",
-                "language": "ko"
             }
         }
     

@@ -128,32 +128,18 @@ def check_dependencies():
     
     return True
 
-def check_port_availability(port=8080):
+def check_port_availability(port=None):
     """포트 사용 가능 여부 확인"""
-    print(f"\n🔌 포트 {port} 사용 가능 여부 확인 중...")
-    
+    if port is None:
+        from main.config import AppConfig
+        config = AppConfig()
+        port = config.get_server_port()
+        
     import socket
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('localhost', port))
-            print(f"✅ 포트 {port} 사용 가능")
-            return True
-    except OSError:
-        print(f"❌ 포트 {port} 이미 사용 중")
-        
-        # 대안 포트 제안
-        alternative_ports = [8081, 8082, 8083, 8090, 9000]
-        for alt_port in alternative_ports:
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.bind(('localhost', alt_port))
-                    print(f"💡 대안 포트: {alt_port} 사용 가능")
-                    return alt_port
-            except OSError:
-                continue
-        
-        print("❌ 사용 가능한 대안 포트를 찾을 수 없습니다.")
-        return False
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex(('localhost', port))
+    sock.close()
+    return result != 0
 
 def main():
     """메인 시스템 체크 함수"""

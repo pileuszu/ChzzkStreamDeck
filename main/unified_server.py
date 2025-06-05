@@ -1379,15 +1379,15 @@ def main():
             print("   ✅ 이는 정상적인 동작이며, 모든 기능을 사용할 수 있습니다.")
             print("   🖥️  데스크톱 앱 모드를 원한다면: pip install pywebview")
     
-    # 서버 관리자 생성
-    server_manager = UnifiedServerManager()
-    
-    # 포트 설정 적용
-    if args.port != 8080:
+    # 포트 설정 적용 (항상)
+    current_config_port = config_manager.get_server_port()
+    if args.port != current_config_port:
         config_manager.update_port(args.port)
-        server_manager.update_port(args.port)  # 서버 매니저 포트도 업데이트
-        print(f"🔧 포트 설정: {args.port}")
+        print(f"🔧 포트 설정: {current_config_port} → {args.port}")
         print(f"🔄 관련 URL들이 자동으로 업데이트되었습니다.")
+    
+    # 서버 관리자 생성 (포트 설정 후)
+    server_manager = UnifiedServerManager()
     
     if server_manager.start_server():
         # 모듈 자동 시작 비활성화 - 수동 시작만 허용

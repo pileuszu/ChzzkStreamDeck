@@ -9,6 +9,7 @@ import asyncio
 import logging
 from chat_client import ChzzkChatClient
 from chat_server import add_chat_message, run_server_thread
+from config import AppConfig
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -17,8 +18,9 @@ logger = logging.getLogger(__name__)
 async def main():
     """메인 함수"""
     # 설정
+    config = AppConfig()
     channel_id = "789d1d9c5b58c847f9f18c8e5073c580"  # 치지직 채널 ID
-    server_port = 8080  # HTTP 서버 포트
+    server_port = config.get_server_port()  # 설정에서 포트 가져오기
     
     print("🎬 네온 치지직 채팅 오버레이 시작!")
     print("="*60)

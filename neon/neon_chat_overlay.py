@@ -8,6 +8,12 @@ import http.server
 import socketserver
 import threading
 from urllib.parse import urlparse
+import sys
+import os
+
+# 경로 추가
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'main'))
+from config import AppConfig
 
 # 로깅 설정
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -384,8 +390,6 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
         """OBS용 채팅 오버레이 HTML - 설정값 적용"""
         # 설정 관리자 import (동적으로)
         try:
-            import sys
-            import os
             # main 폴더를 Python 경로에 추가
             main_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'main')
             if main_dir not in sys.path:
@@ -1486,15 +1490,18 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
 def start_http_server():
     """HTTP 서버 시작"""
+    config = AppConfig()
+    port = config.get_server_port()
+    
     try:
         # ThreadingHTTPServer 사용으로 동시 연결 처리 개선
-        server = http.server.ThreadingHTTPServer(("", 8080), OverlayHTTPHandler)
+        server = http.server.ThreadingHTTPServer(("", port), OverlayHTTPHandler)
         server.timeout = 10  # 10초 타임아웃 설정
-        logger.info("🌐 HTTP 서버 시작: http://localhost:8080")
+        logger.info(f"🌐 HTTP 서버 시작: http://localhost:{port}")
         server.serve_forever()
     except OSError as e:
         if e.errno == 10048:  # Address already in use
-            logger.error("❌ 포트 8080이 이미 사용 중입니다. 다른 프로그램을 종료하거나 포트를 변경하세요.")
+            logger.error(f"❌ 포트 {port}가 이미 사용 중입니다. 다른 프로그램을 종료하거나 포트를 변경하세요.")
         else:
             logger.error(f"❌ HTTP 서버 시작 실패: {e}")
     except Exception as e:
@@ -1502,6 +1509,9 @@ def start_http_server():
 
 async def start_chat_overlay():
     """채팅 오버레이 시작"""
+    config = AppConfig()
+    port = config.get_server_port()
+    
     channel_id = "789d1d9c5b58c847f9f18c8e5073c580"
     
     # HTTP 서버를 별도 스레드에서 실행
@@ -1512,8 +1522,8 @@ async def start_chat_overlay():
     client = ChzzkChatClient(channel_id)
     
     print("🎬 치지직 채팅 오버레이 시작!")
-    print("📺 OBS 브라우저 소스 URL: http://localhost:8080/obs")
-    print("🌐 일반 채팅창 URL: http://localhost:8080/")
+    print(f"📺 OBS 브라우저 소스 URL: http://localhost:{port}/obs")
+    print(f"🌐 일반 채팅창 URL: http://localhost:{port}/")
     
     try:
         if await client.connect():
