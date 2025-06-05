@@ -95,10 +95,16 @@ jobs:
       - name: 📦 Windows 릴리스 패키지 생성
         run: |
           mkdir release-windows
-          robocopy dist-windows\ChzzkStreamDeck release-windows /E /NFL /NDL /NJH /NJS /nc /ns /np || echo "Robocopy completed"
-          copy config_build.json release-windows\ 2>nul || Write-Output "config_build.json not found"
-          copy README.md release-windows\ 2>nul || Write-Output "README.md not found"
-          copy check_system.py release-windows\ 2>nul || Write-Output "check_system.py not found"
+          
+          # Copy all files from build directory using PowerShell
+          Copy-Item -Path "dist-windows\ChzzkStreamDeck\*" -Destination "release-windows" -Recurse -Force
+          
+          # Copy additional files
+          if (Test-Path "config_build.json") { Copy-Item "config_build.json" "release-windows\" }
+          if (Test-Path "README.md") { Copy-Item "README.md" "release-windows\" }
+          if (Test-Path "check_system.py") { Copy-Item "check_system.py" "release-windows\" }
+          
+          Write-Output "✅ Windows release package created successfully"
           
           @"
           # ChzzkStreamDeck Windows Usage Guide
