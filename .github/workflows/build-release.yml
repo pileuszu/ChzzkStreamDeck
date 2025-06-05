@@ -92,7 +92,47 @@ jobs:
       
       - name: 🔨 Windows 실행 파일 빌드
         run: |
-          pyinstaller --clean --noconfirm --onedir main.py --name ChzzkStreamDeck --distpath dist-windows --workpath build-windows --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --add-data "check_system.py;." --hidden-import websockets --hidden-import websockets.legacy --hidden-import websockets.legacy.server --hidden-import aiohttp --hidden-import aiohttp.web --hidden-import aiohttp.client --hidden-import requests --hidden-import requests.adapters --hidden-import requests.auth --hidden-import urllib3 --hidden-import certifi --hidden-import pywebview --hidden-import pywebview.platforms --hidden-import pywebview.platforms.winforms --hidden-import pywebview.platforms.cef --hidden-import psutil --hidden-import http.server --hidden-import http.client --hidden-import http.cookies --hidden-import http.cookiejar --hidden-import socketserver --hidden-import urllib.parse --hidden-import urllib.request --hidden-import urllib.error --hidden-import json --hidden-import webbrowser --hidden-import base64 --hidden-import platform --hidden-import subprocess --hidden-import signal --hidden-import atexit --hidden-import importlib --hidden-import importlib.util --hidden-import datetime --hidden-import threading --hidden-import time --hidden-import logging --hidden-import logging.handlers --hidden-import asyncio --hidden-import asyncio.events --hidden-import asyncio.queues --hidden-import pathlib --hidden-import typing --hidden-import ssl --hidden-import socket --hidden-import select --hidden-import email --hidden-import email.mime --hidden-import email.mime.text --hidden-import hashlib --hidden-import hmac --hidden-import secrets --hidden-import uuid --hidden-import mimetypes --hidden-import shutil --hidden-import tempfile --hidden-import glob --hidden-import fnmatch --hidden-import re --hidden-import string --hidden-import collections --hidden-import collections.abc --hidden-import queue --hidden-import io --hidden-import codecs --hidden-import encodings --hidden-import encodings.utf_8 --hidden-import encodings.cp1252 --collect-all websockets --collect-all aiohttp --collect-all http --collect-all urllib --collect-all datetime --collect-all asyncio --collect-all logging --collect-all email --exclude-module matplotlib --exclude-module numpy --exclude-module pandas --exclude-module scipy --exclude-module tkinter --exclude-module PIL --exclude-module cv2 --exclude-module torch --exclude-module tensorflow --exclude-module IPython --exclude-module jupyter
+          # 바이러스 오탐 방지를 위한 최적화된 빌드
+          pyinstaller --clean --noconfirm --onedir main.py --name ChzzkStreamDeck ^
+            --distpath dist-windows ^
+            --workpath build-windows ^
+            --add-data "neon;neon" ^
+            --add-data "purple;purple" ^
+            --add-data "main;main" ^
+            --add-data "requirements.txt;." ^
+            --add-data "config_build.json;." ^
+            --add-data "README.md;." ^
+            --add-data "check_system.py;." ^
+            --noupx ^
+            --strip ^
+            --log-level=WARN ^
+            --hidden-import websockets ^
+            --hidden-import websockets.legacy ^
+            --hidden-import websockets.legacy.server ^
+            --hidden-import aiohttp ^
+            --hidden-import aiohttp.web ^
+            --hidden-import aiohttp.client ^
+            --hidden-import requests ^
+            --hidden-import urllib3 ^
+            --hidden-import certifi ^
+            --hidden-import pywebview ^
+            --hidden-import pywebview.platforms ^
+            --hidden-import pywebview.platforms.winforms ^
+            --hidden-import pywebview.platforms.cef ^
+            --hidden-import psutil ^
+            --hidden-import http.server ^
+            --hidden-import json ^
+            --hidden-import webbrowser ^
+            --hidden-import threading ^
+            --hidden-import logging ^
+            --hidden-import asyncio ^
+            --exclude-module matplotlib ^
+            --exclude-module numpy ^
+            --exclude-module pandas ^
+            --exclude-module scipy ^
+            --exclude-module tkinter ^
+            --exclude-module PIL ^
+            --exclude-module cv2
       
       - name: 📦 Windows 릴리스 패키지 생성
         run: |
@@ -134,6 +174,47 @@ jobs:
           - If port conflict: Use --port 8081 argument
           - If slow startup: Be patient on first run (normal behavior)
           "@ | Out-File -FilePath "release-windows\USER_GUIDE.md" -Encoding UTF8
+          
+          @"
+          # ⚠️ 바이러스 오탐(False Positive) 안내
+          
+          ## 🔍 Trojan:Win32/Sabsik.TE.A!ml 오탐 관련
+          
+          이 프로그램이 바이러스로 감지되는 것은 **Windows Defender의 오탐(False Positive)**입니다.
+          
+          ### 오탐이 발생하는 이유:
+          1. **PyInstaller로 빌드된 Python 실행 파일** - 패킹된 구조가 의심스럽게 보임
+          2. **네트워크 통신 기능** - 치지직/Spotify API 연동
+          3. **프로세스 관리 기능** - 안전한 앱 종료를 위한 기능
+          4. **서명되지 않은 실행 파일** - 개인 프로젝트로 코드 사이닝 없음
+          
+          ### 안전성 확인 방법:
+          1. **VirusTotal 검사**: 이 파일을 VirusTotal.com에 업로드하여 확인
+          2. **소스 코드 공개**: GitHub에서 전체 소스 코드 확인 가능
+          3. **커뮤니티 검증**: 다른 사용자들의 사용 후기 확인
+          
+          ### 사용하려면:
+          1. **Windows Defender 예외 추가**:
+             - Windows 보안 → 바이러스 및 위협 방지 → 설정 관리
+             - 바이러스 및 위협 방지 설정에서 '예외 추가'
+             - 이 폴더를 예외로 추가
+          
+          2. **실행 시 경고 무시**:
+             - "Windows의 PC 보호" 경고에서 "추가 정보" 클릭
+             - "실행" 버튼 클릭
+          
+          ### 여전히 걱정된다면:
+          - Python 환경에서 소스 코드를 직접 실행하세요
+          - GitHub에서 소스 코드를 다운로드하여 검토하세요
+          - 의심스러운 코드가 있다면 이슈로 신고해주세요
+          
+          ### 연락처:
+          - GitHub Issues: [프로젝트 페이지]
+          - 소스 코드: 100% 공개
+          - 라이선스: MIT (자유 사용)
+          
+          이 프로그램은 스트리밍 도구일 뿐이며, 악성 코드가 아닙니다.
+          "@ | Out-File -FilePath "release-windows\VIRUS_FALSE_POSITIVE.md" -Encoding UTF8
       
       - name: 📤 Windows 아티팩트 업로드
         uses: actions/upload-artifact@v4

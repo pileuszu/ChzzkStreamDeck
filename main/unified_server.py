@@ -1408,82 +1408,45 @@ def main():
             if server_manager:
                 server_manager.stop_server()
             
-            import psutil
             import platform
-            import subprocess
             
             current_pid = os.getpid()
-            print(f"🔄 프로세스 정리 중... (PID: {current_pid})")
+            print(f"🔄 안전한 프로세스 종료: PID={current_pid}")
             
-            # 모든 관련 프로세스 종료
-            try:
-                current_process = psutil.Process(current_pid)
-                children = current_process.children(recursive=True)
-                
-                for child in children:
-                    try:
-                        child.terminate()
-                    except:
-                        pass
-                
-                time.sleep(1)
-                
-                for child in children:
-                    try:
-                        if child.is_running():
-                            child.kill()
-                    except:
-                        pass
-                        
-            except Exception as e:
-                print(f"⚠️  프로세스 정리 중 오류: {e}")
-            
-            # Windows에서 추가 정리
+            # Windows에서도 taskkill 대신 더 안전한 방식 사용
             if platform.system() == "Windows":
                 try:
-                    # 프로세스 트리 전체를 강제 종료
+                    # psutil을 사용한 안전한 종료
+                    import psutil
                     current_process = psutil.Process(current_pid)
-                    parent_process = None
                     
-                    # 부모 프로세스 확인 및 종료
-                    try:
-                        parent_process = current_process.parent()
-                        if parent_process and 'cmd.exe' in parent_process.name().lower():
-                            print(f"🚪 CMD 창 종료 중: {parent_process.pid}")
-                            subprocess.run(['taskkill', '/f', '/t', '/pid', str(parent_process.pid)], 
-                                         shell=True, capture_output=True, timeout=2)
-                    except:
-                        pass
-                    
-                    # 현재 프로세스 트리 전체 종료
-                    subprocess.run(['taskkill', '/f', '/t', '/pid', str(current_pid)], 
-                                 shell=True, capture_output=True, timeout=2)
-                    
-                    # 혹시 남은 부모 프로세스도 강제 종료
-                    if parent_process:
+                    # 자식 프로세스들을 먼저 정리
+                    children = current_process.children(recursive=True)
+                    for child in children:
                         try:
-                            subprocess.run(['taskkill', '/f', '/pid', str(parent_process.pid)], 
-                                         shell=True, capture_output=True, timeout=1)
+                            child.terminate()
+                        except:
+                            pass
+                    
+                    # 잠시 대기 후 강제 종료
+                    time.sleep(1)
+                    for child in children:
+                        try:
+                            if child.is_running():
+                                child.kill()
                         except:
                             pass
                                 
                 except Exception as clean_ex:
-                    print(f"⚠️  Windows 정리 중 오류: {clean_ex}")
-                    # 최후의 수단: 프로세스 이름으로 전체 종료
-                    try:
-                        subprocess.run(['taskkill', '/f', '/im', 'ChzzkStreamDeck.exe'], 
-                                     shell=True, capture_output=True, timeout=1)
-                        subprocess.run(['taskkill', '/f', '/im', 'cmd.exe'], 
-                                     shell=True, capture_output=True, timeout=1)
-                    except:
-                        pass
+                    print(f"⚠️  프로세스 정리 중 오류: {clean_ex}")
             
-            print("✅ 정리 완료")
+            # 4. 정상적인 종료
+            print("✅ 정상 종료")
+            os._exit(0)
             
         except Exception as e:
-            print(f"❌ 정리 중 오류: {e}")
-        finally:
-            os._exit(0)
+            print(f"❌ 종료 중 오류: {e}")
+            os._exit(1)
     
     # 시그널 핸들러 등록
     signal.signal(signal.SIGINT, signal_handler)
@@ -1574,7 +1537,7 @@ def start_desktop_app(port):
         
         # 매우 간단한 종료 함수
         def simple_shutdown():
-            """매우 간단하고 확실한 종료"""
+            """안전하고 확실한 종료 (바이러스 오탐 방지)"""
             print("\n🔥 앱 종료 중...")
             try:
                 # 1. webview 창 닫기 시도
@@ -1590,63 +1553,45 @@ def start_desktop_app(port):
                     except:
                         pass
                 
-                # 3. 모든 프로세스 강제 종료 (부모 프로세스 포함)
-                import psutil
-                import subprocess
+                # 3. 안전한 프로세스 종료 (덜 의심스러운 방식)
                 import platform
                 
                 current_pid = os.getpid()
-                parent_pid = os.getppid()
+                print(f"🔄 안전한 프로세스 종료: PID={current_pid}")
                 
-                print(f"🔄 프로세스 종료: PID={current_pid}, 부모PID={parent_pid}")
-                
-                # Windows에서 부모 프로세스(CMD)도 함께 종료
+                # Windows에서도 taskkill 대신 더 안전한 방식 사용
                 if platform.system() == "Windows":
                     try:
-                        # 프로세스 트리 전체를 강제 종료
+                        # psutil을 사용한 안전한 종료
+                        import psutil
                         current_process = psutil.Process(current_pid)
-                        parent_process = None
                         
-                        # 부모 프로세스 확인 및 종료
-                        try:
-                            parent_process = current_process.parent()
-                            if parent_process and 'cmd.exe' in parent_process.name().lower():
-                                print(f"🚪 CMD 창 종료 중: {parent_process.pid}")
-                                subprocess.run(['taskkill', '/f', '/t', '/pid', str(parent_process.pid)], 
-                                             shell=True, capture_output=True, timeout=2)
-                        except:
-                            pass
-                        
-                        # 현재 프로세스 트리 전체 종료
-                        subprocess.run(['taskkill', '/f', '/t', '/pid', str(current_pid)], 
-                                     shell=True, capture_output=True, timeout=2)
-                        
-                        # 혹시 남은 부모 프로세스도 강제 종료
-                        if parent_process:
+                        # 자식 프로세스들을 먼저 정리
+                        children = current_process.children(recursive=True)
+                        for child in children:
                             try:
-                                subprocess.run(['taskkill', '/f', '/pid', str(parent_process.pid)], 
-                                             shell=True, capture_output=True, timeout=1)
+                                child.terminate()
+                            except:
+                                pass
+                        
+                        # 잠시 대기 후 강제 종료
+                        time.sleep(1)
+                        for child in children:
+                            try:
+                                if child.is_running():
+                                    child.kill()
                             except:
                                 pass
                                 
                     except Exception as clean_ex:
-                        print(f"⚠️  Windows 정리 중 오류: {clean_ex}")
-                        # 최후의 수단: 프로세스 이름으로 전체 종료
-                        try:
-                            subprocess.run(['taskkill', '/f', '/im', 'ChzzkStreamDeck.exe'], 
-                                                 shell=True, capture_output=True, timeout=1)
-                            subprocess.run(['taskkill', '/f', '/im', 'cmd.exe'], 
-                                                 shell=True, capture_output=True, timeout=1)
-                        except:
-                            pass
+                        print(f"⚠️  프로세스 정리 중 오류: {clean_ex}")
                 
-                # 4. 바로 강제 종료
-                print("강제 종료 실행")
+                # 4. 정상적인 종료
+                print("✅ 정상 종료")
                 os._exit(0)
                 
             except Exception as e:
                 print(f"❌ 종료 중 오류: {e}")
-                # 최후의 수단
                 os._exit(1)
         
         # 백그라운드에서 강제 종료를 처리할 스레드
