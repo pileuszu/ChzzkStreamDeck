@@ -410,7 +410,14 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 return False
                 
             if module_name == 'chat':
-                return server_manager._start_chat_service()
+                result = server_manager._start_chat_service()
+                if not result:
+                    logger.error("💬 채팅 모듈 시작 실패!")
+                    logger.error("📋 체크리스트:")
+                    logger.error("   ✅ 채팅 모듈이 활성화되어 있나요?")
+                    logger.error("   ✅ 치지직 채널 ID가 설정되어 있나요?")
+                    logger.error("   ✅ 해당 채널이 현재 방송 중인가요?")
+                return result
             elif module_name == 'spotify':
                 return server_manager._start_spotify_service()
             return False
@@ -1186,18 +1193,30 @@ class UnifiedServerManager:
     
     def _start_chat_service(self):
         """채팅 서비스 시작 (내부 메서드)"""
+        logger.info("채팅 서비스 시작 요청됨")
+        
+        # 모듈 활성화 상태 확인
         if not config_manager.is_module_enabled('chat'):
+            logger.warning("채팅 모듈이 비활성화되어 있습니다. 관리패널에서 활성화하세요.")
             return False
         
         try:
+            # 채널 ID 확인
             channel_id = config_manager.get("modules.chat.channel_id")
-            if not channel_id:
-                logger.warning("채팅 채널 ID가 설정되지 않았습니다.")
+            logger.info(f"설정된 채널 ID: {channel_id}")
+            
+            if not channel_id or channel_id.strip() == "":
+                logger.error("❌ 채팅 채널 ID가 설정되지 않았습니다!")
+                logger.error("🔧 해결 방법:")
+                logger.error("   1. 관리패널 → 채팅 모듈 설정")
+                logger.error("   2. 치지직 채널 ID 입력")
+                logger.error("   3. 설정 저장 후 모듈 시작")
                 return False
             
             # 기존 채팅 서비스 정리
             if self.chat_task:
                 self.chat_task.cancel()
+                logger.info("기존 채팅 서비스 정리됨")
             
             # 새 채팅 클라이언트 시작
             loop = asyncio.new_event_loop()
@@ -1233,7 +1252,15 @@ class UnifiedServerManager:
                         add_chat_message(message_data)
                 
                 logger.info(f"채팅 클라이언트 시작 시도 ({retry_count + 1}/{max_retries})")
-                self.chat_client = ChzzkChatClient(channel_id)
+                
+                try:
+                    self.chat_client = ChzzkChatClient(channel_id)
+                except ValueError as ve:
+                    logger.error(f"채팅 클라이언트 생성 실패: {ve}")
+                    return
+                except Exception as ce:
+                    logger.error(f"채팅 클라이언트 생성 중 오류: {ce}")
+                    return
                 
                 if await self.chat_client.connect():
                     logger.info("채팅방 연결 성공! 메시지 수신 시작...")

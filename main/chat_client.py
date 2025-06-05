@@ -14,11 +14,17 @@ class ChzzkChatClient:
     """치지직 채팅 클라이언트"""
     
     def __init__(self, channel_id: str):
-        self.channel_id = channel_id
+        self.channel_id = channel_id.strip() if channel_id else ""
         self.chat_channel_id = None
         self.access_token = None
         self.websocket = None
         self.is_connected = False
+        
+        # 입력 검증
+        if not self.channel_id:
+            raise ValueError("❌ 채널 ID가 비어있습니다!")
+        
+        logger.info(f"📺 채팅 클라이언트 초기화: 채널 ID = {self.channel_id}")
         
         # 웹소켓 엔드포인트들
         self.endpoints = [

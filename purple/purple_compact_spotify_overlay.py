@@ -157,7 +157,9 @@ def get_purple_compact_template():
         
         @keyframes marquee {
             0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
+            50% { transform: translateX(-100%); }
+            50.01% { transform: translateX(100%); }
+            100% { transform: translateX(100%); }
         }
         
         /* 재생 중이 아닐 때 숨김 */
@@ -295,8 +297,11 @@ def get_purple_compact_template():
             }
         }
         
-        // 초기 로드
+        // 즉시 로드 (테마 변경 시에도 바로 반영)
         fetchCurrentTrack();
+        
+        // 페이지 로드 후 추가 로드 (혹시 모를 지연 대비)
+        setTimeout(fetchCurrentTrack, 500);
         
         // 5초마다 서버에서 데이터 업데이트
         setInterval(fetchCurrentTrack, 5000);
