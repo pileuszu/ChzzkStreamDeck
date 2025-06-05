@@ -453,6 +453,11 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             if auth_code:
                 spotify_api = SpotifyAPI()
                 if spotify_api.get_access_token(auth_code):
+                    # 인증 완료 후 자동으로 Spotify 모듈 활성화
+                    config_manager.set_module_enabled('spotify', True)
+                    config_manager.save_config()
+                    logger.info("Spotify 인증 완료 - 모듈 자동 활성화")
+                    
                     self.send_response(200)
                     self.send_header('Content-type', 'text/html; charset=utf-8')
                     self.end_headers()
@@ -476,6 +481,12 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                                 border-radius: 15px;
                                 backdrop-filter: blur(10px);
                             }
+                            .countdown {
+                                font-size: 18px;
+                                color: #1db954;
+                                font-weight: bold;
+                                margin-top: 20px;
+                            }
                         </style>
                     </head>
                     <body>
@@ -484,8 +495,35 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                             <p>이제 OBS에서 오버레이를 사용할 수 있습니다.</p>
                             <p><strong>OBS 브라우저 소스 URL:</strong></p>
                             <p><code>http://localhost:8080/spotify/overlay</code></p>
-                            <p>이 창을 닫아도 됩니다.</p>
+                            <div class="countdown" id="countdown">관리패널이 자동으로 새로고침됩니다... (3초)</div>
                         </div>
+                        <script>
+                            let countdown = 3;
+                            const countdownEl = document.getElementById('countdown');
+                            
+                            const timer = setInterval(() => {
+                                countdown--;
+                                if (countdown > 0) {
+                                    countdownEl.textContent = `관리패널이 자동으로 새로고침됩니다... (${countdown}초)`;
+                                } else {
+                                    countdownEl.textContent = '관리패널을 새로고침합니다...';
+                                    clearInterval(timer);
+                                    
+                                    // 부모 창이 있으면 새로고침
+                                    if (window.opener) {
+                                        try {
+                                            window.opener.location.reload();
+                                        } catch (e) {
+                                            // 크로스 오리진 에러 무시
+                                        }
+                                    }
+                                    
+                                    setTimeout(() => {
+                                        window.close();
+                                    }, 1000);
+                                }
+                            }, 1000);
+                        </script>
                     </body>
                     </html>
                     """
@@ -525,514 +563,82 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
     
     def _get_chat_overlay_html(self):
-        """채팅 오버레이 HTML"""
-        # 설정에서 채팅 옵션 가져오기
-        from config import CONFIG_MANAGER
-        config = CONFIG_MANAGER.get_config()
-        chat_config = config.get('modules', {}).get('chat', {})
+        """채팅 오버레이 HTML - 네온 테마 사용"""
+        import sys
+        import os
+        # neon 폴더를 Python 경로에 추가
+        neon_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'neon')
+        if neon_dir not in sys.path:
+            sys.path.insert(0, neon_dir)
         
-        max_messages = chat_config.get('max_messages', 10)
-        single_chat_mode = chat_config.get('single_chat_mode', False)
-        streamer_align_left = chat_config.get('streamer_align_left', False)
-        background_enabled = chat_config.get('background_enabled', True)
-        background_opacity = chat_config.get('background_opacity', 0.3)
-        remove_outer_effects = chat_config.get('remove_outer_effects', False)
+        try:
+            # 이미 import된 모듈이 있다면 reload
+            if 'neon_chat_overlay' in sys.modules:
+                import importlib
+                importlib.reload(sys.modules['neon_chat_overlay'])
+                
+            from neon_chat_overlay import OverlayHTTPHandler
+            logger.info("Neon 채팅 오버레이가 성공적으로 로드되었습니다.")
+            
+            # 임시 핸들러 생성하고 HTML만 가져오기
+            temp_handler = OverlayHTTPHandler.__new__(OverlayHTTPHandler)
+            return temp_handler.get_overlay_html()
+            
+        except ImportError as e:
+            logger.warning(f"Neon 채팅 오버레이를 불러올 수 없습니다: {e}. 기본 템플릿을 사용합니다.")
+        except Exception as e:
+            logger.error(f"Neon 채팅 오버레이 로드 중 오류: {e}")
         
-        # 1개 채팅만 표시하는 경우
-        if single_chat_mode:
-            max_messages = 1
-        
-        # 배경 투명도 값들 미리 계산
-        bg_op_01 = background_opacity * 0.1
-        bg_op_03 = background_opacity * 0.3
-        bg_op_04 = background_opacity * 0.4
-        bg_op_05 = background_opacity * 0.5
-        bg_op_08 = background_opacity * 0.8
-        
-        # 배경 효과 CSS
-        background_effects_css = ""
-        if not remove_outer_effects:
-            background_effects_css = """
-        /* 사이버펑크 배경 - 데이터 스트림과 네온 그리드 */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                linear-gradient(90deg, rgba(0,255,175,0.03) 1px, transparent 1px),
-                linear-gradient(180deg, rgba(155,77,224,0.03) 1px, transparent 1px),
-                radial-gradient(2px 2px at 20% 30%, rgba(0,255,175,0.8), transparent),
-                radial-gradient(1px 1px at 80% 20%, rgba(155,77,224,0.6), transparent),
-                radial-gradient(3px 3px at 45% 70%, rgba(255,215,0,0.4), transparent),
-                radial-gradient(2px 2px at 90% 80%, rgba(255,255,255,0.3), transparent);
-            background-size: 50px 50px, 50px 50px, 300px 300px, 250px 250px, 400px 400px, 200px 200px;
-            animation: dataStreamFlow 15s linear infinite, cyberGrid 8s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(0deg, transparent 0px, rgba(0,255,175,0.03) 1px, transparent 2px, transparent 4px);
-            animation: scanlines 2s linear infinite;
-            pointer-events: none;
-            z-index: 1;
-        }
-        
-        @keyframes dataStreamFlow {
-            0% { transform: translateY(0) translateX(0); opacity: 0.4; }
-            50% { transform: translateY(-50px) translateX(25px); opacity: 0.8; }
-            100% { transform: translateY(-100px) translateX(50px); opacity: 0.2; }
-        }
-
-        @keyframes cyberGrid {
-            0%, 100% { opacity: 0.3; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.02); }
-        }
-
-        @keyframes scanlines {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(4px); }
-        }
-            """
-        
-        # 채팅박스 배경 CSS
-        if background_enabled:
-            chat_background_css = f"""
-        .chat_box.naver.chat:not(.streamer) {{
-            background: linear-gradient(135deg, rgba(0,255,175,{bg_op_01}) 0%, rgba(0,255,175,{bg_op_03}) 30%, rgba(0,255,175,{bg_op_04}) 50%, rgba(0,255,175,{bg_op_03}) 70%, rgba(0,255,175,{bg_op_01}) 100%);
-            border: 1px solid rgba(0,255,175,{bg_op_08});
-            backdrop-filter: blur(20px);
-            box-shadow: 0 12px 20px rgba(0,255,175,{bg_op_05}), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 15px rgba(0,255,175,{bg_op_03});
-        }}
-
-        .chat_box.naver.chat.streamer {{
-            background: linear-gradient(135deg, rgba(155,77,224,{bg_op_01}) 0%, rgba(155,77,224,{bg_op_03}) 30%, rgba(155,77,224,{bg_op_04}) 50%, rgba(155,77,224,{bg_op_03}) 70%, rgba(155,77,224,{bg_op_01}) 100%);
-            border: 1px solid rgba(155,77,224,{bg_op_08});
-            backdrop-filter: blur(20px);
-            box-shadow: 0 12px 20px rgba(155,77,224,{bg_op_05}), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 15px rgba(155,77,224,{bg_op_03});
-        }}
-            """
-        else:
-            chat_background_css = """
-        .chat_box.naver.chat:not(.streamer) {
-            background: transparent;
-            border: 1px solid rgba(0, 255, 175, 0.25);
-        }
-
-        .chat_box.naver.chat.streamer {
-            background: transparent;
-            border: 1px solid rgba(155, 77, 224, 0.25);
-        }
-            """
-        
-        # 스트리머 정렬 CSS
-        if streamer_align_left:
-            streamer_css = """
-        .chat_box.naver.chat.streamer {
-            align-self: flex-start !important;
-            border-radius: 25px 25px 25px 8px !important;
-            animation: messageEntrance 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
-            transform: translateX(-120px) rotateY(-15deg) scale(0.8);
-        }
-        
-        .chat_box.naver.chat.streamer::before {
-            content: '⭐';
-            position: absolute;
-            top: -12px;
-            right: -12px !important;
-            left: auto !important;
-        }
-            """
-        else:
-            streamer_css = """
-        .chat_box.naver.chat.streamer {
-            align-self: flex-end;
-            border-radius: 25px 25px 8px 25px;
-            animation: messageEntranceRight 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            transform: translateX(120px) rotateY(15deg) scale(0.8);
-        }
-        
-        .chat_box.naver.chat.streamer::before {
-            content: '⭐';
-            position: absolute;
-            top: -12px;
-            left: -12px;
-        }
-            """
-        
+        # Fallback - 기본 템플릿
         return """<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>치지직 채팅 오버레이</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <title>채팅 오버레이</title>
     <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-        
-        body {{
-            background: transparent;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }}
-
-        {background_effects_css}
-        
-        .chat_wrap {{
-            position: fixed;
-            top: 50%;
-            left: 10%;
-            transform: translateY(-50%);
-            width: 640px;
-            height: 720px;
-            background: transparent;
-            z-index: 1000;
-            font-family: 'Noto Sans KR', sans-serif;
-            overflow: hidden;
-            padding: 60px;
-        }}
-
-        .chat_list {{
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            gap: 15px;
-            height: 100%;
-            overflow: hidden;
-            position: relative;
-            z-index: 2;
-            mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.05) 5%, rgba(0,0,0,0.2) 15%, rgba(0,0,0,0.6) 30%, black 45%, black 100%);
-            -webkit-mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.05) 5%, rgba(0,0,0,0.2) 15%, rgba(0,0,0,0.6) 30%, black 45%, black 100%);
-        }}
-
-        .chat_box.naver.chat {{
-            padding: 18px 25px;
-            margin: 20px 40px;
-            position: relative;
-            z-index: 2;
-            animation: messageEntrance 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            transform: translateX(-120px) rotateY(-15deg) scale(0.8);
-            opacity: 0;
-            max-width: calc(100% - 80px);
-            filter: drop-shadow(0 0 0 transparent);
-            overflow: visible;
-            border-radius: 25px 25px 25px 8px;
-        }}
-
-        {streamer_css}
-
-        {chat_background_css}
-
-        .chat_box.naver.chat.streamer::before {{
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            background: transparent;
-            border-radius: 50%;
-            animation: starTwinkle 1.5s ease-in-out infinite alternate;
-            z-index: 100;
-            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.9));
-        }}
-
-        .chat_box.naver.chat p.name {{
-            display: block;
-            font-weight: 900;
-            font-size: 15px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            position: relative;
-            overflow: hidden;
-        }}
-
-        .chat_box.naver.chat.streamer p.name {{
-            color: #9b4de0;
-            text-shadow: 0 0 15px rgba(155, 77, 224, 0.9), 0 0 30px rgba(155, 77, 224, 0.5), 0 0 45px rgba(155, 77, 224, 0.3);
-            animation: royalGlow 3s ease-in-out infinite alternate;
-        }}
-
-        .chat_box.naver.chat:not(.streamer) p.name {{
-            color: #00FFAF;
-            text-shadow: 0 0 15px rgba(0, 255, 175, 0.9), 0 0 30px rgba(0, 255, 175, 0.5), 0 0 45px rgba(0, 255, 175, 0.3);
-            text-shadow: 
-                0 0 15px rgba(0, 255, 175, 0.9),
-                0 0 30px rgba(0, 255, 175, 0.5),
-                0 0 45px rgba(0, 255, 175, 0.3);
-            animation: emeraldGlow 3s ease-in-out infinite alternate;
-        }
-
-        /* 이름과 텍스트 사이 구분선 */
-        .chat_box.naver.chat::after {
-            content: '';
-            position: absolute;
-            left: 25px;
-            right: 25px;
-            top: calc(15px + 8px + 15px + 3px);
-            height: 4px;
-            background: linear-gradient(90deg, 
-                transparent 0%,
-                white 20%,
-                white 80%,
-                transparent 100%);
-            opacity: 0.6;
-            transform: scaleX(0);
-            animation: separatorExpand 1.5s ease-out 0.8s forwards;
-            z-index: 1;
-        }
-
-        .chat_box.naver.chat p.text {
-            color: #ffffff;
-            font-size: 17px;
-            line-height: 1.5;
-            font-weight: 400;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-            animation: typeWriter 1.5s ease-out 0.3s forwards;
-            opacity: 0;
-            position: relative;
-        }
-
-        .chat_box.naver.chat:not(.streamer) {
-            align-self: flex-start;
-            background: linear-gradient(135deg, 
-                rgba(0, 255, 175, 0.03) 0%, 
-                rgba(0, 255, 175, 0.08) 30%,
-                rgba(0, 255, 175, 0.12) 50%, 
-                rgba(0, 255, 175, 0.08) 70%,
-                rgba(0, 255, 175, 0.03) 100%);
-            border: 1px solid rgba(0, 255, 175, 0.25);
-            border-radius: 25px 25px 25px 8px;
-            backdrop-filter: blur(20px);
-            box-shadow: 
-                0 12px 20px rgba(0, 255, 175, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.06),
-                0 0 15px rgba(0, 255, 175, 0.1);
-        }
-
-        .chat_box.naver.chat.streamer {
-            align-self: flex-end;
-            background: linear-gradient(135deg, 
-                rgba(155, 77, 224, 0.03) 0%, 
-                rgba(155, 77, 224, 0.08) 30%,
-                rgba(155, 77, 224, 0.12) 50%, 
-                rgba(155, 77, 224, 0.08) 70%,
-                rgba(155, 77, 224, 0.03) 100%);
-            border: 1px solid rgba(155, 77, 224, 0.25);
-            border-radius: 25px 25px 8px 25px;
-            backdrop-filter: blur(20px);
-            box-shadow: 
-                0 12px 20px rgba(155, 77, 224, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.06),
-                0 0 15px rgba(155, 77, 224, 0.1);
-            animation: messageEntranceRight 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            transform: translateX(120px) rotateY(15deg) scale(0.8);
-        }
-
-        @keyframes messageEntrance {
-            0% {
-                transform: translateX(-120px) rotateY(-15deg) scale(0.8);
-                opacity: 0;
-                filter: blur(10px);
-            }
-            100% {
-                transform: translateX(0) rotateY(0deg) scale(1);
-                opacity: 1;
-                filter: blur(0px);
-            }
-        }
-
-        @keyframes messageEntranceRight {
-            0% {
-                transform: translateX(120px) rotateY(15deg) scale(0.8);
-                opacity: 0;
-                filter: blur(10px);
-            }
-            100% {
-                transform: translateX(0) rotateY(0deg) scale(1);
-                opacity: 1;
-                filter: blur(0px);
-            }
-        }
-
-        @keyframes starTwinkle {
-            0% {
-                filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
-                opacity: 1;
-            }
-            100% {
-                filter: drop-shadow(0 0 15px rgba(255, 215, 0, 1)) drop-shadow(0 0 25px rgba(255, 215, 0, 0.5));
-                opacity: 0.8;
-            }
-        }
-
-        @keyframes royalGlow {
-            0% {
-                text-shadow: 
-                    0 0 15px rgba(155, 77, 224, 0.9),
-                    0 0 30px rgba(155, 77, 224, 0.5),
-                    0 0 45px rgba(155, 77, 224, 0.3);
-            }
-            100% {
-                text-shadow: 
-                    0 0 25px rgba(155, 77, 224, 1),
-                    0 0 40px rgba(155, 77, 224, 0.8),
-                    0 0 60px rgba(155, 77, 224, 0.5),
-                    0 0 80px rgba(155, 77, 224, 0.3);
-            }
-        }
-
-        @keyframes emeraldGlow {
-            0% {
-                text-shadow: 
-                    0 0 15px rgba(0, 255, 175, 0.9),
-                    0 0 30px rgba(0, 255, 175, 0.5),
-                    0 0 45px rgba(0, 255, 175, 0.3);
-            }
-            100% {
-                text-shadow: 
-                    0 0 25px rgba(0, 255, 175, 1),
-                    0 0 25px rgba(0, 255, 175, 0.8),
-                    0 0 25px rgba(0, 255, 175, 0.5),
-                    0 0 25px rgba(0, 255, 175, 0.3);
-            }
-        }
-
-        @keyframes typeWriter {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes separatorExpand {
-            0% {
-                transform: scaleX(0);
-            }
-            100% {
-                transform: scaleX(1);
-            }
-        }
-
-        @keyframes dataStreamFlow {
-            0% {
-                transform: translateY(0) translateX(0);
-                opacity: 0.4;
-            }
-            50% {
-                transform: translateY(-50px) translateX(25px);
-                opacity: 0.8;
-            }
-            100% {
-                transform: translateY(-100px) translateX(50px);
-                opacity: 0.2;
-            }
-        }
-
-        @keyframes cyberGrid {
-            0%, 100% {
-                opacity: 0.3;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.6;
-                transform: scale(1.02);
-            }
-        }
-
-        @keyframes scanlines {
-            0% {
-                transform: translateY(0);
-            }
-            100% {
-                transform: translateY(4px);
-            }
-        }
+        body { background: transparent; font-family: 'Noto Sans KR', sans-serif; }
+        .chat_wrap { position: fixed; bottom: 20px; left: 20px; width: 520px; height: 600px; }
+        .chat_list { display: flex; flex-direction: column; justify-content: flex-end; gap: 15px; height: 100%; overflow: hidden; }
+        .chat_box { padding: 15px; margin: 10px; background: rgba(0,0,0,0.7); border-radius: 10px; color: white; }
+        .chat_box.streamer { border: 2px solid #9b4de0; }
+        .name { font-weight: bold; margin-bottom: 5px; }
+        .text { font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="chat_wrap">
-        <div class="chat_list">
-        </div>
+        <div class="chat_list"></div>
     </div>
-
     <script>
         let lastMessageCount = 0;
-        
         async function updateMessages() {
             try {
                 const response = await fetch('/chat/api/messages');
                 const messages = await response.json();
-                
                 if (messages.length > lastMessageCount) {
                     const container = document.querySelector('.chat_list');
                     const newMessages = messages.slice(lastMessageCount);
-                    
                     newMessages.forEach((data, index) => {
                         setTimeout(() => {
                             const messageDiv = document.createElement('div');
-                            
-                            // 클래스 설정
-                            let className = 'chat_box naver chat';
-                            if (data.is_streamer) {
-                                className += ' streamer';
-                            }
+                            let className = 'chat_box';
+                            if (data.is_streamer) className += ' streamer';
                             messageDiv.className = className;
-                            
-                            messageDiv.innerHTML = `
-                                <p class="name">${escapeHtml(data.nickname)}</p>
-                                <p class="text">${escapeHtml(data.message)}</p>
-                            `;
-                            
+                            messageDiv.innerHTML = `<div class="name">${data.nickname}</div><div class="text">${data.message}</div>`;
                             container.appendChild(messageDiv);
-                            
-                            // 최대 메시지 수 유지 - 설정에 따라 조정
-                            while (container.children.length > """ + str(max_messages) + """) {
-                                const firstChild = container.firstChild;
-                                if (firstChild) {
-                                    firstChild.remove();
-                                }
+                            while (container.children.length > 10) {
+                                container.removeChild(container.firstChild);
                             }
                         }, index * 200);
                     });
-                    
                     lastMessageCount = messages.length;
                 }
             } catch (e) {
                 console.error('메시지 업데이트 실패:', e);
             }
         }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        // 2초마다 새 메시지 체크
         setInterval(updateMessages, 2000);
-        
-        // 초기 로드
         updateMessages();
     </script>
 </body>

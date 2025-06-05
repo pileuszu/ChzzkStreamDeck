@@ -651,7 +651,8 @@ def get_neon_admin_template():
             loadConfig();
             setupEventListeners();
             // 상태 주기적 업데이트
-            setInterval(updateModuleStatus, 3000);
+            // 2초마다 모듈 상태 업데이트 (더 빠른 반응성)
+        setInterval(updateModuleStatus, 2000);
         });
         
         // 창 닫기 이벤트 감지
@@ -764,11 +765,13 @@ def get_neon_admin_template():
                     authBtn.classList.add('secondary');
                     authBtn.disabled = false;
                     
-                    // 시작 버튼 활성화 및 초록색으로 변경
+                    // 시작 버튼 활성화
                     if (toggleBtn) {
                         toggleBtn.disabled = false;
-                        if (toggleBtn.textContent === '시작') {
-                            toggleBtn.classList.remove('secondary');
+                        // 현재 실행 상태에 따라 버튼 스타일 결정
+                        if (toggleBtn.textContent.includes('시작')) {
+                            toggleBtn.textContent = '시작';
+                            toggleBtn.classList.remove('secondary', 'danger');
                             toggleBtn.classList.add('primary');
                         }
                     }
