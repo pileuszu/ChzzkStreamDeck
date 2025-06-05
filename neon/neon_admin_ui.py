@@ -472,9 +472,9 @@ def get_neon_admin_template():
         </div>
         
         <div class="tab-navigation">
-            <button class="tab-btn active" onclick="showTab('chat')">💬 채팅</button>
-            <button class="tab-btn" onclick="showTab('spotify')">🎵 스포티파이</button>
-            <button class="tab-btn" onclick="showTab('settings')">⚙️ 설정</button>
+                            <button class="tab-btn active" onclick="showTab('chat', this)">💬 채팅</button>
+                <button class="tab-btn" onclick="showTab('spotify', this)">🎵 스포티파이</button>
+                <button class="tab-btn" onclick="showTab('settings', this)">⚙️ 설정</button>
         </div>
         
         <div class="card server-status-card">
@@ -627,7 +627,7 @@ def get_neon_admin_template():
         let currentConfig = {};
         
         // 탭 기능
-        function showTab(tabName) {
+        function showTab(tabName, clickedElement) {
             // 모든 탭 컨텐츠 숨기기
             const tabContents = document.querySelectorAll('.tab-content');
             tabContents.forEach(content => content.classList.remove('active'));
@@ -643,7 +643,15 @@ def get_neon_admin_template():
             }
             
             // 선택된 탭 버튼 활성화
-            event.target.classList.add('active');
+            if (clickedElement) {
+                clickedElement.classList.add('active');
+            } else {
+                // 기본으로 첫 번째 버튼 찾기
+                const targetBtn = document.querySelector(`[onclick*="${tabName}"]`);
+                if (targetBtn) {
+                    targetBtn.classList.add('active');
+                }
+            }
         }
         
         // 초기 로드
@@ -793,7 +801,7 @@ def get_neon_admin_template():
             }
         }
         
-        function authenticateSpotify() {
+        async function authenticateSpotify() {
             // Spotify 인증 URL로 이동
             const clientId = document.getElementById('spotify-client-id').value;
             if (!clientId) {
@@ -801,11 +809,16 @@ def get_neon_admin_template():
                 return;
             }
             
-                            const serverInfo = await fetch('/api/config').then(r => r.json());
+            try {
+                const serverInfo = await fetch('/api/config').then(r => r.json());
                 const currentPort = serverInfo.server?.port || 8080;
                 const redirectUri = `http://localhost:${currentPort}/spotify/callback`;
                 const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=user-read-currently-playing user-read-playback-state&show_dialog=true`;
-            window.open(authUrl, '_blank');
+                window.open(authUrl, '_blank');
+            } catch (error) {
+                console.error('Spotify 인증 URL 생성 실패:', error);
+                showNotification('Spotify 인증 URL 생성에 실패했습니다.', 'error');
+            }
         }
         
         function updateUI() {
@@ -813,9 +826,17 @@ def get_neon_admin_template():
             const currentPort = currentConfig.server?.port || 8080;
             document.getElementById('serverPort').textContent = currentPort;
             
+            // 서버 주소 전체 업데이트
+            const serverAddressElement = document.getElementById('serverAddress');
+            if (serverAddressElement) {
+                serverAddressElement.innerHTML = `http://localhost:<span id="serverPort">${currentPort}</span>`;
+            }
+            
             // URL 업데이트 (동적 포트 반영)
-            document.getElementById('chat-url').textContent = `http://localhost:${currentPort}/chat/overlay`;
-            document.getElementById('spotify-url').textContent = `http://localhost:${currentPort}/spotify/overlay`;
+            const chatUrlElement = document.getElementById('chat-url');
+            const spotifyUrlElement = document.getElementById('spotify-url');
+            if (chatUrlElement) chatUrlElement.textContent = `http://localhost:${currentPort}/chat/overlay`;
+            if (spotifyUrlElement) spotifyUrlElement.textContent = `http://localhost:${currentPort}/spotify/overlay`;
             
             // 모듈별 설정 업데이트
             const modules = currentConfig.modules || {};

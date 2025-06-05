@@ -13,7 +13,7 @@ Pillow>=10.0.0
 numpy>=1.24.0
 
 # 데스크톱 앱 모드용 의존성
-pywebview>=4.0.0
+pywebview[cef]>=4.0.0
 
 # 개발 및 로깅
 logging-config>=1.0.0

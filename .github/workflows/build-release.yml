@@ -70,8 +70,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
-          # webview 재설치로 확실히 설치
-          pip install --upgrade pywebview>=4.0.0
+          # webview와 Windows GUI 라이브러리 설치
+          pip install --upgrade pywebview[cef]>=4.0.0
+          # Windows webview 백엔드 설치 시도
+          pip install pywebview[winforms] || echo "winforms backend failed, continuing..."
+          # 추가 GUI 라이브러리 설치
+          pip install pythonnet || echo "pythonnet failed, continuing..."
       
       - name: 🔧 빌드 설정 생성 (자동)
         run: |
@@ -157,13 +161,19 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
       
+      - name: 🐧 Linux GUI 의존성 설치
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.0
+          
       - name: 📦 의존성 설치
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
-          # webview 재설치로 확실히 설치
-          pip install --upgrade pywebview>=4.0.0
+          # Linux용 webview 설치
+          pip install --upgrade pywebview[gtk]>=4.0.0
+          pip install PyGObject || echo "PyGObject installation failed, continuing..."
       
       - name: 🔧 빌드 설정 생성 (자동)
         run: |
