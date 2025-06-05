@@ -97,7 +97,7 @@ jobs:
             "--clean",
             "--noconfirm", 
             "--onedir",
-            "main.py",
+            "run_chzzk.py",
             "--name", "ChzzkStreamDeck",
             "--distpath", "dist-windows",
             "--workpath", "build-windows",

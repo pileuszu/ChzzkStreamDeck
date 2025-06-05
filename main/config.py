@@ -14,19 +14,33 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 def get_config_file_path():
-    """설정 파일의 올바른 경로 반환"""
+    """설정 파일의 올바른 경로 반환 (안전한 버전)"""
     config_filename = "overlay_config.json"
     
-    # PyInstaller 환경인지 확인
-    if getattr(sys, 'frozen', False):
-        # 실행 파일이 있는 디렉토리 사용
-        executable_dir = os.path.dirname(sys.executable)
-        config_path = os.path.join(executable_dir, config_filename)
-    else:
-        # 개발 환경에서는 현재 작업 디렉토리 사용
-        config_path = config_filename
+    try:
+        # PyInstaller 환경인지 확인
+        if getattr(sys, 'frozen', False):
+            # 실행 파일이 있는 디렉토리 사용
+            try:
+                executable_dir = os.path.dirname(sys.executable)
+                config_path = os.path.join(executable_dir, config_filename)
+                
+                # 경로 접근 가능한지 테스트
+                if os.path.exists(os.path.dirname(config_path)) and os.access(os.path.dirname(config_path), os.W_OK):
+                    return config_path
+                else:
+                    # 쓰기 권한이 없으면 현재 디렉토리 사용
+                    return config_filename
+            except Exception:
+                # 실패하면 현재 디렉토리 사용
+                return config_filename
+        else:
+            # 개발 환경에서는 현재 작업 디렉토리 사용
+            return config_filename
     
-    return config_path
+    except Exception:
+        # 모든 실패 시 기본값 반환
+        return config_filename
 
 # 기본 설정 파일 경로
 CONFIG_FILE = get_config_file_path()
