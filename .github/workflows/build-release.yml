@@ -90,7 +90,7 @@ jobs:
       
       - name: 🔨 Windows 실행 파일 빌드
         run: |
-          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --add-data "check_system.py;." --hidden-import websockets --hidden-import aiohttp --hidden-import requests --hidden-import pywebview --hidden-import psutil
+          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --add-data "check_system.py;." --hidden-import websockets --hidden-import aiohttp --hidden-import requests --hidden-import pywebview --hidden-import psutil --hidden-import http.server --hidden-import http --hidden-import socketserver --hidden-import urllib.parse --hidden-import json --collect-all http
       
       - name: 📦 Windows 릴리스 패키지 생성
         run: |
@@ -177,7 +177,13 @@ jobs:
             --hidden-import aiohttp \
             --hidden-import requests \
             --hidden-import pywebview \
-            --hidden-import psutil
+            --hidden-import psutil \
+            --hidden-import http.server \
+            --hidden-import http \
+            --hidden-import socketserver \
+            --hidden-import urllib.parse \
+            --hidden-import json \
+            --collect-all http
       
       - name: 📦 Linux 릴리스 패키지 생성
         run: |
