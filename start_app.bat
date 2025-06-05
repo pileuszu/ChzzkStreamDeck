@@ -14,11 +14,11 @@ if exist "ChzzkStreamDeck.exe" (
     echo 🚀 앱 시작 중... (첫 실행 시 시간이 걸릴 수 있습니다)
     echo.
     
-    REM 실행 파일이 있는 경우 (빌드된 버전)
-    start "" "ChzzkStreamDeck.exe"
+    REM 실행 파일이 있는 경우 (빌드된 버전) - 앱 모드로 실행
+    start "" "ChzzkStreamDeck.exe" --app
     
-    echo 📱 브라우저에서 관리패널이 자동으로 열립니다
-    echo 💡 만약 열리지 않으면 http://localhost:8080/admin 접속하세요
+    echo 📱 데스크톱 앱 모드로 관리패널이 열립니다
+    echo 💡 만약 앱이 열리지 않으면 http://localhost:8080/admin 브라우저로 접속하세요
     
 ) else if exist "main.py" (
     echo ⚠️  실행 파일을 찾을 수 없습니다. 개발 모드로 실행합니다.

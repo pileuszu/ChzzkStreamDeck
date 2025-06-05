@@ -391,12 +391,15 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
     
     def _handle_chat_module(self, path_parts):
         """채팅 모듈 처리"""
-        if not config_manager.is_module_enabled('chat'):
-            self.send_response(503)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(b'<h1>Chat module is disabled</h1>')
-            return
+        # 오버레이는 항상 표시 (설정 안내 포함)
+        if path_parts and path_parts[0] != 'overlay' and not config_manager.is_module_enabled('chat'):
+            # API 호출만 모듈 활성화 상태 체크
+            if path_parts and path_parts[0] == 'api':
+                self.send_response(503)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(b'{"error": "Chat module is disabled", "enabled": false}')
+                return
         
         if not path_parts or path_parts[0] == 'overlay':
             # 채팅 오버레이 HTML
@@ -426,12 +429,21 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
     
     def _handle_spotify_module(self, path_parts):
         """스포티파이 모듈 처리"""
-        if not config_manager.is_module_enabled('spotify'):
-            self.send_response(503)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(b'<h1>Spotify module is disabled</h1>')
-            return
+        # Spotify 모듈 활성화 체크를 OAuth 콜백에서만 수행
+        if path_parts and path_parts[0] == 'callback':
+            # OAuth 콜백은 항상 허용 (인증 완료 후 모듈 활성화)
+            pass
+        elif path_parts and path_parts[0] == 'overlay':
+            # 오버레이는 항상 표시 (설정 안내 포함)
+            pass
+        elif not config_manager.is_module_enabled('spotify'):
+            # API 호출만 모듈 활성화 상태 체크
+            if path_parts and path_parts[0] == 'api':
+                self.send_response(503)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(b'{"error": "Spotify module is disabled", "enabled": false}')
+                return
         
         if path_parts[0] == 'callback':
             # 스포티파이 인증 콜백
@@ -1704,7 +1716,11 @@ def main():
     parser.add_argument('--port', type=int, default=8080, help='서버 포트 번호 (기본값: 8080)')
     args = parser.parse_args()
     
-    APP_MODE = args.app
+    # 실행 파일인 경우 자동으로 앱 모드 활성화
+    if getattr(sys, 'frozen', False) and not args.browser:
+        APP_MODE = True
+    else:
+        APP_MODE = args.app
     
     print("🎮 네온 오버레이 통합 시스템 시작!")
     print("="*60)

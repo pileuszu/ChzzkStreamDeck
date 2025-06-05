@@ -370,6 +370,29 @@ def get_neon_admin_template():
             background: linear-gradient(45deg, #ff4757, #ff3838);
         }
         
+        /* 채팅 시작 버튼 특별 스타일링 */
+        #chat-toggle-btn.primary {
+            background: linear-gradient(45deg, #00FFAF, #00d084) !important;
+            box-shadow: 0 4px 15px rgba(0, 255, 175, 0.4);
+        }
+        
+        #chat-toggle-btn.primary:hover {
+            background: linear-gradient(45deg, #00d084, #00FFAF) !important;
+            box-shadow: 0 6px 20px rgba(0, 255, 175, 0.6);
+            transform: translateY(-3px);
+        }
+        
+        #chat-toggle-btn.danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52) !important;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        #chat-toggle-btn.danger:hover {
+            background: linear-gradient(45deg, #ee5a52, #ff6b6b) !important;
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+            transform: translateY(-3px);
+        }
+        
         .status-indicator {
             display: inline-block;
             width: 10px;
@@ -709,7 +732,7 @@ def get_neon_admin_template():
                     moduleCard.classList.add('running');
                     if (toggleBtn) {
                         toggleBtn.textContent = '정지';
-                        toggleBtn.classList.remove('secondary');
+                        toggleBtn.classList.remove('secondary', 'primary');
                         toggleBtn.classList.add('danger');
                     }
                 } else {
@@ -717,8 +740,13 @@ def get_neon_admin_template():
                     moduleCard.classList.remove('running');
                     if (toggleBtn) {
                         toggleBtn.textContent = '시작';
-                        toggleBtn.classList.remove('danger');
-                        toggleBtn.classList.add('secondary');
+                        toggleBtn.classList.remove('danger', 'secondary');
+                        // 채팅 모듈은 항상 primary 스타일로, 다른 모듈은 secondary
+                        if (moduleName === 'chat') {
+                            toggleBtn.classList.add('primary');
+                        } else {
+                            toggleBtn.classList.add('secondary');
+                        }
                     }
                 }
             }
