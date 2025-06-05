@@ -37,6 +37,10 @@ MANIFEST
 [0-9]*.[0-9]*.[0-9]*
 [0-9]*.[0-9]*
 [0-9]*
+*.*.* 
+/[0-9]*.[0-9]*.[0-9]*
+/*.*.* 
+
 
 # 가상환경
 .venv/
@@ -90,4 +94,18 @@ personal_config.json
 
 # 백업 파일
 *.bak
-*.backup 
+*.backup
+
+# 빌드 관련 파일
+build/
+dist/
+*.spec
+release/
+release-*/
+config_build.json
+start_port_*.bat
+start_port_*.sh
+
+# PyInstaller 관련
+*.manifest
+*.exe.config 

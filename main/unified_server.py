@@ -156,11 +156,22 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             
             for module_name in config_manager.config.get("modules", {}):
                 module_config = config_manager.get_module_config(module_name)
-                status["modules"][module_name] = {
+                module_status = {
                     "enabled": module_config.get("enabled", False),
                     "running": services_running.get(module_name.replace('_effect', ''), False),
                     "url": f"http://localhost:{config_manager.get_server_port()}{module_config.get('url_path', '')}/overlay"
                 }
+                
+                # Spotify 모듈의 경우 인증 상태 추가
+                if module_name == 'spotify':
+                    try:
+                        from spotify_api import SpotifyAPI
+                        spotify_api = SpotifyAPI()
+                        module_status["authenticated"] = spotify_api.is_authenticated()
+                    except Exception as e:
+                        module_status["authenticated"] = False
+                
+                status["modules"][module_name] = module_status
             
             status_json = json.dumps(status, ensure_ascii=False)
             self.wfile.write(status_json.encode('utf-8'))
@@ -1690,6 +1701,7 @@ def main():
     parser = argparse.ArgumentParser(description='네온 오버레이 통합 시스템')
     parser.add_argument('--app', action='store_true', help='데스크톱 앱 모드로 실행')
     parser.add_argument('--browser', action='store_true', help='브라우저 모드로 실행 (기본값)')
+    parser.add_argument('--port', type=int, default=8080, help='서버 포트 번호 (기본값: 8080)')
     args = parser.parse_args()
     
     APP_MODE = args.app
@@ -1707,6 +1719,11 @@ def main():
     
     # 서버 관리자 생성 및 시작
     server_manager = UnifiedServerManager()
+    
+    # 포트 설정 적용
+    if args.port != 8080:
+        config_manager.config["server"]["port"] = args.port
+        print(f"🔧 포트 설정: {args.port}")
     
     if server_manager.start_server():
         # 모듈 자동 시작 비활성화 - 수동 시작만 허용

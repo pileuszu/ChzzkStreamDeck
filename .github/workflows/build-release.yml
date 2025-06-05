@@ -1,0 +1,236 @@
+name: 🚀 Build and Release ChzzkStreamDeck
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PYTHON_VERSION: '3.13.3'
+
+jobs:
+  # 버전 관리
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_release: ${{ steps.version.outputs.is_release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 📋 버전 계산
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            # 태그가 있으면 태그 버전 사용
+            VERSION=${GITHUB_REF#refs/tags/}
+            IS_RELEASE=true
+          else
+            # 태그가 없으면 커밋 해시로 pre-release 버전 생성
+            SHORT_SHA=${GITHUB_SHA::7}
+            COMMIT_COUNT=$(git rev-list --count HEAD)
+            VERSION="v0.1.${COMMIT_COUNT}-${SHORT_SHA}"
+            IS_RELEASE=false
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_release=$IS_RELEASE" >> $GITHUB_OUTPUT
+          echo "📝 버전: $VERSION (Release: $IS_RELEASE)"
+
+  # Windows 빌드
+  build-windows:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 🐍 Python 설정
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 의존성 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: 🔧 빌드 설정 생성 (자동)
+        run: |
+          python -c "
+          from build_config import BuildConfig
+          import json
+          
+          # 기본 포트로 자동 설정
+          config = BuildConfig()
+          config.config['server']['port'] = 8080
+          config.config['modules']['spotify']['redirect_uri'] = 'http://localhost:8080/spotify/callback'
+          
+          with open('config_build.json', 'w', encoding='utf-8') as f:
+              json.dump(config.config, f, indent=2, ensure_ascii=False)
+          
+          print('✅ 빌드 설정 자동 생성 완료')
+          "
+      
+      - name: 🔨 Windows 실행 파일 빌드
+        run: |
+          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck --add-data "neon;neon" --add-data "purple;purple" --add-data "main;main" --add-data "requirements.txt;." --add-data "config_build.json;." --add-data "README.md;." --hidden-import websockets --hidden-import aiohttp --hidden-import requests --hidden-import pywebview --hidden-import psutil
+      
+      - name: 📦 Windows 릴리스 패키지 생성
+        run: |
+          mkdir release-windows
+          copy dist\ChzzkStreamDeck.exe release-windows\
+          copy config_build.json release-windows\ 2>nul || echo "config_build.json not found"
+          copy README.md release-windows\ 2>nul || echo "README.md not found"
+          
+          echo # ChzzkStreamDeck Windows 사용 가이드 > release-windows\USER_GUIDE.md
+          echo. >> release-windows\USER_GUIDE.md
+          echo ## 🎮 실행 방법 >> release-windows\USER_GUIDE.md
+          echo 1. ChzzkStreamDeck.exe 더블클릭 >> release-windows\USER_GUIDE.md
+          echo 2. Windows Defender 경고 시 추가 정보 -^> 실행 클릭 >> release-windows\USER_GUIDE.md
+          echo 3. 관리패널에서 설정 입력 >> release-windows\USER_GUIDE.md
+      
+      - name: 📤 Windows 아티팩트 업로드
+        uses: actions/upload-artifact@v3
+        with:
+          name: ChzzkStreamDeck-Windows-${{ needs.version.outputs.version }}
+          path: release-windows/
+
+  # Linux 빌드
+  build-linux:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 🐍 Python 설정
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 의존성 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: 🔧 빌드 설정 생성 (자동)
+        run: |
+          python3 -c "
+          from build_config import BuildConfig
+          import json
+          
+          config = BuildConfig()
+          config.config['server']['port'] = 8080
+          config.config['modules']['spotify']['redirect_uri'] = 'http://localhost:8080/spotify/callback'
+          
+          with open('config_build.json', 'w', encoding='utf-8') as f:
+              json.dump(config.config, f, indent=2, ensure_ascii=False)
+          
+          print('✅ 빌드 설정 자동 생성 완료')
+          "
+      
+      - name: 🔨 Linux 실행 파일 빌드
+        run: |
+          pyinstaller --clean --noconfirm --onefile main.py --name ChzzkStreamDeck \
+            --add-data "neon:neon" \
+            --add-data "purple:purple" \
+            --add-data "main:main" \
+            --add-data "requirements.txt:." \
+            --add-data "config_build.json:." \
+            --add-data "README.md:." \
+            --hidden-import websockets \
+            --hidden-import aiohttp \
+            --hidden-import requests \
+            --hidden-import pywebview \
+            --hidden-import psutil
+      
+      - name: 📦 Linux 릴리스 패키지 생성
+        run: |
+          mkdir release-linux
+          cp dist/ChzzkStreamDeck release-linux/
+          cp config_build.json release-linux/ || echo "config_build.json not found"
+          cp README.md release-linux/ || echo "README.md not found"
+          chmod +x release-linux/ChzzkStreamDeck
+          
+          # 실행 스크립트 생성
+          cat > release-linux/run.sh << 'EOF'
+          #!/bin/bash
+          echo "🎮 ChzzkStreamDeck 실행 중..."
+          ./ChzzkStreamDeck
+          EOF
+          chmod +x release-linux/run.sh
+      
+      - name: 📤 Linux 아티팩트 업로드
+        uses: actions/upload-artifact@v3
+        with:
+          name: ChzzkStreamDeck-Linux-${{ needs.version.outputs.version }}
+          path: release-linux/
+
+  # 릴리스 생성
+  release:
+    needs: [version, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 📥 모든 아티팩트 다운로드
+        uses: actions/download-artifact@v3
+      
+      - name: 📦 릴리스 압축 파일 생성
+        run: |
+          # Windows 릴리스
+          cd "ChzzkStreamDeck-Windows-${{ needs.version.outputs.version }}"
+          zip -r "../ChzzkStreamDeck-Windows-${{ needs.version.outputs.version }}.zip" .
+          cd ..
+          
+          # Linux 릴리스
+          cd "ChzzkStreamDeck-Linux-${{ needs.version.outputs.version }}"
+          tar -czf "../ChzzkStreamDeck-Linux-${{ needs.version.outputs.version }}.tar.gz" .
+          cd ..
+      
+      - name: 🏷️ GitHub 릴리스 생성
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.version.outputs.version }}
+          name: "ChzzkStreamDeck ${{ needs.version.outputs.version }}"
+          body: |
+            # 🎮 ChzzkStreamDeck ${{ needs.version.outputs.version }}
+            
+            ## 🆕 새로운 기능
+            - 치지직 채팅 오버레이
+            - Spotify 음악 정보 오버레이  
+            - 네온/퍼플 테마 지원
+            - 포트 선택 가능
+            - 완전한 종료 시스템
+            
+            ## 📦 다운로드
+            - **Windows**: ChzzkStreamDeck-Windows-${{ needs.version.outputs.version }}.zip
+            - **Linux**: ChzzkStreamDeck-Linux-${{ needs.version.outputs.version }}.tar.gz
+            
+            ## 🔧 설치 및 사용법
+            1. 해당 OS용 파일 다운로드
+            2. 압축 해제
+            3. 실행 파일 실행
+            4. 관리패널에서 설정 입력
+            
+            ## ⚠️ 주의사항
+            - 첫 실행 시 방화벽/보안 프로그램에서 허용 필요
+            - Spotify 사용 시 개발자 앱 등록 필요
+            
+            ---
+            **빌드 정보**: ${{ github.sha }}
+          draft: ${{ needs.version.outputs.is_release == 'false' }}
+          prerelease: ${{ needs.version.outputs.is_release == 'false' }}
+          files: |
+            ChzzkStreamDeck-Windows-${{ needs.version.outputs.version }}.zip
+            ChzzkStreamDeck-Linux-${{ needs.version.outputs.version }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

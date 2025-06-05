@@ -572,7 +572,7 @@ def get_neon_admin_template():
                     </div>
                     <div class="btn-group">
                         <button class="btn" onclick="saveModuleConfig('spotify')">설정 저장</button>
-                        <button class="btn secondary" onclick="authenticateSpotify()">Spotify 인증</button>
+                                                        <button id="spotify-auth-btn" class="btn primary" onclick="authenticateSpotify()">🔗 Spotify 인증</button>
                         <button class="btn secondary" onclick="toggleModule('spotify')" id="spotify-toggle-btn">시작</button>
                     </div>
                 </div>
@@ -681,6 +681,11 @@ def get_neon_admin_template():
                 Object.keys(status.modules).forEach(moduleName => {
                     const moduleStatus = status.modules[moduleName];
                     updateModuleStatusDisplay(moduleName, moduleStatus.running);
+                    
+                    // Spotify 모듈의 경우 인증 상태도 업데이트
+                    if (moduleName === 'spotify') {
+                        updateSpotifyAuthStatus(moduleStatus.authenticated);
+                    }
                 });
             } catch (error) {
                 console.error('상태 업데이트 실패:', error);
@@ -714,6 +719,44 @@ def get_neon_admin_template():
                         toggleBtn.textContent = '시작';
                         toggleBtn.classList.remove('danger');
                         toggleBtn.classList.add('secondary');
+                    }
+                }
+            }
+        }
+        
+        function updateSpotifyAuthStatus(isAuthenticated) {
+            const authBtn = document.getElementById('spotify-auth-btn');
+            const toggleBtn = document.getElementById('spotify-toggle-btn');
+            
+            if (authBtn) {
+                if (isAuthenticated) {
+                    // 인증 완료 상태
+                    authBtn.textContent = '✓ 인증 완료';
+                    authBtn.classList.remove('primary');
+                    authBtn.classList.add('secondary');
+                    authBtn.disabled = false;
+                    
+                    // 시작 버튼 활성화 및 초록색으로 변경
+                    if (toggleBtn) {
+                        toggleBtn.disabled = false;
+                        if (toggleBtn.textContent === '시작') {
+                            toggleBtn.classList.remove('secondary');
+                            toggleBtn.classList.add('primary');
+                        }
+                    }
+                } else {
+                    // 인증 필요 상태
+                    authBtn.textContent = '🔗 Spotify 인증';
+                    authBtn.classList.remove('secondary');
+                    authBtn.classList.add('primary');
+                    authBtn.disabled = false;
+                    
+                    // 시작 버튼 비활성화
+                    if (toggleBtn) {
+                        toggleBtn.disabled = true;
+                        toggleBtn.classList.remove('primary', 'danger');
+                        toggleBtn.classList.add('secondary');
+                        toggleBtn.textContent = '시작 (인증 필요)';
                     }
                 }
             }
