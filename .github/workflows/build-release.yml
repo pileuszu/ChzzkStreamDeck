@@ -7,6 +7,12 @@ on:
   pull_request:
     branches: [ main ]
 
+# GitHub Actions 권한 설정
+permissions:
+  contents: write  # 릴리스 생성을 위한 쓰기 권한
+  packages: write  # 패키지 업로드 권한
+  actions: read    # 액션 읽기 권한
+
 env:
   PYTHON_VERSION: '3.13.3'
   PYTHONIOENCODING: utf-8
@@ -220,7 +226,7 @@ jobs:
           cd ..
       
       - name: 🏷️ GitHub 릴리스 생성
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.version.outputs.version }}
           name: "ChzzkStreamDeck ${{ needs.version.outputs.version }}"
@@ -252,6 +258,8 @@ jobs:
             **빌드 정보**: ${{ github.sha }}
           draft: ${{ needs.version.outputs.is_release == 'false' }}
           prerelease: ${{ needs.version.outputs.is_release == 'false' }}
+          make_latest: ${{ needs.version.outputs.is_release == 'true' }}
+          generate_release_notes: true
           files: |
             ChzzkStreamDeck-Windows-${{ needs.version.outputs.version }}.zip
             ChzzkStreamDeck-Linux-${{ needs.version.outputs.version }}.tar.gz
