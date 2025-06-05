@@ -540,34 +540,13 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                             <p>이제 OBS에서 오버레이를 사용할 수 있습니다.</p>
                             <p><strong>OBS 브라우저 소스 URL:</strong></p>
                             <p><code>http://localhost:8080/spotify/overlay</code></p>
-                            <div class="countdown" id="countdown">관리패널이 자동으로 새로고침됩니다... (3초)</div>
+                            <div class="message">이 창을 닫고 관리패널에서 Spotify 모듈 상태를 확인하세요.</div>
                         </div>
                         <script>
-                            let countdown = 3;
-                            const countdownEl = document.getElementById('countdown');
-                            
-                            const timer = setInterval(() => {
-                                countdown--;
-                                if (countdown > 0) {
-                                    countdownEl.textContent = `관리패널이 자동으로 새로고침됩니다... (${countdown}초)`;
-                                } else {
-                                    countdownEl.textContent = '관리패널을 새로고침합니다...';
-                                    clearInterval(timer);
-                                    
-                                    // 부모 창이 있으면 새로고침
-                                    if (window.opener) {
-                                        try {
-                                            window.opener.location.reload();
-                                        } catch (e) {
-                                            // 크로스 오리진 에러 무시
-                                        }
-                                    }
-                                    
-                                    setTimeout(() => {
-                                        window.close();
-                                    }, 1000);
-                                }
-                            }, 1000);
+                            // 3초 후 자동으로 창 닫기
+                            setTimeout(() => {
+                                window.close();
+                            }, 3000);
                         </script>
                     </body>
                     </html>
@@ -617,7 +596,7 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             sys.path.insert(0, neon_dir)
         
         try:
-            # 이미 import된 모듈이 있다면 reload
+            # 이미 import된 모듈이 있다면 reload (설정 변경 반영을 위해)
             if 'neon_chat_overlay' in sys.modules:
                 import importlib
                 importlib.reload(sys.modules['neon_chat_overlay'])
@@ -630,6 +609,7 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             html = temp_handler.get_overlay_html()
             # API 엔드포인트를 통합 서버 경로로 수정
             html = html.replace('/api/messages', '/chat/api/messages')
+            logger.info("채팅 오버레이 HTML 생성 완료 (설정값 적용됨)")
             return html
             
         except ImportError as e:

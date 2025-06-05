@@ -381,8 +381,47 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
                 pass
     
     def get_overlay_html(self):
-        """OBS용 채팅 오버레이 HTML"""
-        return """<!DOCTYPE html>
+        """OBS용 채팅 오버레이 HTML - 설정값 적용"""
+        # 설정 관리자 import (동적으로)
+        try:
+            import sys
+            import os
+            # main 폴더를 Python 경로에 추가
+            main_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'main')
+            if main_dir not in sys.path:
+                sys.path.insert(0, main_dir)
+            
+            from config import config_manager
+            
+            # 채팅 모듈 설정 가져오기
+            chat_config = config_manager.get_module_config('chat')
+            max_messages = chat_config.get('max_messages', 10)
+            streamer_align_left = chat_config.get('streamer_align_left', False)
+            background_enabled = chat_config.get('background_enabled', True)
+            background_opacity = chat_config.get('background_opacity', 0.3)
+            remove_outer_effects = chat_config.get('remove_outer_effects', False)
+            
+            logger.info(f"채팅 설정 적용: max_messages={max_messages}, streamer_align_left={streamer_align_left}, background_enabled={background_enabled}, background_opacity={background_opacity}, remove_outer_effects={remove_outer_effects}")
+            
+        except Exception as e:
+            logger.warning(f"설정 로드 실패, 기본값 사용: {e}")
+            # 기본값들
+            max_messages = 10
+            streamer_align_left = False
+            background_enabled = True
+            background_opacity = 0.3
+            remove_outer_effects = False
+        
+        # 동적 CSS 생성
+        dynamic_css = self._generate_dynamic_css(
+            max_messages=max_messages,
+            streamer_align_left=streamer_align_left,
+            background_enabled=background_enabled,
+            background_opacity=background_opacity,
+            remove_outer_effects=remove_outer_effects
+        )
+        
+        html_template = """<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -1305,8 +1344,8 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
                             
                             container.appendChild(messageDiv);
                             
-                            // 최대 15개 메시지 유지 - 오래된 것부터 제거
-                            while (container.children.length > 15) {
+                            // 설정값에 따른 최대 메시지 수 유지
+                            while (container.children.length > """ + str(max_messages) + """) {
                                 const firstChild = container.firstChild;
                                 if (firstChild && !firstChild.classList.contains('waiting-message')) {
                                     firstChild.style.animation = 'fadeOut 1s ease-out forwards';
@@ -1337,11 +1376,109 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
         // 2초마다 새 메시지 체크
         setInterval(updateMessages, 2000);
         
+        // 설정 적용 함수
+        function applySettings() {
+            const maxMessages = """ + str(max_messages) + """;
+            const streamerAlignLeft = """ + str(streamer_align_left).lower() + """;
+            
+            // 최대 메시지 수 디버깅
+            console.log('적용된 설정:', {
+                maxMessages: maxMessages,
+                streamerAlignLeft: streamerAlignLeft
+            });
+        }
+        
+        // 초기 설정 적용
+        applySettings();
+        
         // 초기 로드
         updateMessages();
     </script>
 </body>
 </html>"""
+        
+        # 동적 CSS 삽입
+        html_template = html_template.replace('</style>', dynamic_css + '\n        </style>')
+        
+        return html_template
+    
+    def _generate_dynamic_css(self, max_messages, streamer_align_left, background_enabled, background_opacity, remove_outer_effects):
+        """설정값에 따른 동적 CSS 생성"""
+        css = ""
+        
+        # 배경 효과 제거
+        if remove_outer_effects:
+            css += """
+        /* 외부 효과 제거 */
+        body::before, body::after {
+            display: none !important;
+        }
+        .chat_box.naver.chat:before,
+        .chat_box.naver.chat:after {
+            display: none !important;
+        }
+"""
+        
+        # 배경 투명도 조정
+        if not background_enabled:
+            css += """
+        /* 배경 완전 투명 */
+        .chat_box.naver.chat {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+        }
+"""
+        else:
+            # 배경 투명도 적용
+            opacity_value = background_opacity
+            css += f"""
+        /* 배경 투명도 조정 */
+        .chat_box.naver.chat {{
+            background: rgba(0, 0, 0, {opacity_value}) !important;
+            backdrop-filter: blur({int(opacity_value * 20)}px) !important;
+        }}
+        .chat_box.naver.chat.streamer {{
+            background: linear-gradient(135deg, 
+                rgba(155, 77, 224, {opacity_value * 0.4}) 0%, 
+                rgba(75, 0, 130, {opacity_value * 0.6}) 50%,
+                rgba(138, 43, 226, {opacity_value * 0.4}) 100%) !important;
+        }}
+        .chat_box.naver.chat.donation {{
+            background: linear-gradient(135deg, 
+                rgba(255, 215, 0, {opacity_value * 0.3}) 0%, 
+                rgba(255, 140, 0, {opacity_value * 0.4}) 30%,
+                rgba(255, 69, 0, {opacity_value * 0.5}) 70%,
+                rgba(255, 215, 0, {opacity_value * 0.3}) 100%) !important;
+        }}
+"""
+        
+        # 스트리머 메시지 왼쪽 정렬
+        if streamer_align_left:
+            css += """
+        /* 스트리머 메시지 왼쪽 정렬 */
+        .chat_box.naver.chat.streamer {
+            margin-left: 20px !important;
+            margin-right: 40px !important;
+        }
+        .chat_box.naver.chat.streamer .name {
+            text-align: left !important;
+        }
+        .chat_box.naver.chat.streamer .text {
+            text-align: left !important;
+        }
+"""
+        else:
+            css += """
+        /* 스트리머 메시지 기본 정렬 */
+        .chat_box.naver.chat.streamer {
+            margin-left: 40px !important;
+            margin-right: 20px !important;
+        }
+"""
+        
+        return css
     
     def log_message(self, format, *args):
         # 로그 메시지 비활성화
