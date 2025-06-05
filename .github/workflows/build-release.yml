@@ -70,6 +70,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+          # webview 재설치로 확실히 설치
+          pip install --upgrade pywebview>=4.0.0
       
       - name: 🔧 빌드 설정 생성 (자동)
         run: |
@@ -160,6 +162,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+          # webview 재설치로 확실히 설치
+          pip install --upgrade pywebview>=4.0.0
       
       - name: 🔧 빌드 설정 생성 (자동)
         run: |

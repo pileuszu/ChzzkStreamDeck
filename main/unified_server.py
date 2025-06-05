@@ -1130,6 +1130,11 @@ class UnifiedServerManager:
         self.spotify_update_thread = None
         self.port = config_manager.get_server_port()
     
+    def update_port(self, new_port):
+        """포트 업데이트"""
+        self.port = new_port
+        logger.info(f"서버 매니저 포트 업데이트: {new_port}")
+    
     def start_server(self):
         """통합 서버 시작"""
         try:
@@ -1370,15 +1375,17 @@ def main():
     else:
         print("🌐 브라우저 모드")
         if APP_MODE and not WEBVIEW_AVAILABLE:
-            print("⚠️  webview 라이브러리가 설치되지 않았습니다. 브라우저 모드로 실행합니다.")
-            print("   데스크톱 앱 모드를 사용하려면: pip install webview")
+            print("💡 webview 라이브러리가 없어 브라우저 모드로 실행됩니다.")
+            print("   ✅ 이는 정상적인 동작이며, 모든 기능을 사용할 수 있습니다.")
+            print("   🖥️  데스크톱 앱 모드를 원한다면: pip install pywebview")
     
-    # 서버 관리자 생성 및 시작
+    # 서버 관리자 생성
     server_manager = UnifiedServerManager()
     
     # 포트 설정 적용
     if args.port != 8080:
         config_manager.update_port(args.port)
+        server_manager.update_port(args.port)  # 서버 매니저 포트도 업데이트
         print(f"🔧 포트 설정: {args.port}")
         print(f"🔄 관련 URL들이 자동으로 업데이트되었습니다.")
     
