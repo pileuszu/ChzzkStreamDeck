@@ -84,12 +84,13 @@ jobs:
           import json
           
           # 기본 포트로 자동 설정
-          config = BuildConfig()
-          config.config['server']['port'] = 8080
-          config.config['modules']['spotify']['redirect_uri'] = 'http://localhost:8080/spotify/callback'
+          build_config = BuildConfig()
+          config = build_config.get_build_config()
+          config['server']['port'] = 8080
+          config['modules']['spotify']['redirect_uri'] = 'http://localhost:8080/spotify/callback'
           
           with open('config_build.json', 'w', encoding='utf-8') as f:
-              json.dump(config.config, f, indent=2, ensure_ascii=False)
+              json.dump(config, f, indent=2, ensure_ascii=False)
           
           print('Build config generated successfully')
           "
@@ -164,19 +165,38 @@ jobs:
       - name: 🐧 Linux GUI 의존성 설치
         run: |
           sudo apt-get update
+          # Cairo 및 GTK 의존성 설치
+          sudo apt-get install -y \
+            libcairo2-dev \
+            libgirepository1.0-dev \
+            pkg-config \
+            python3-dev \
+            python3-gi \
+            python3-gi-cairo \
+            gir1.2-gtk-3.0 \
+            libgtk-3-dev \
+            libglib2.0-dev || echo "Some dependencies failed, continuing..."
+          
           # Ubuntu 24.04에서는 webkit2-4.1 사용
-          sudo apt-get install -y python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1 || \
-          sudo apt-get install -y python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.0 || \
+          sudo apt-get install -y gir1.2-webkit2-4.1 || \
+          sudo apt-get install -y gir1.2-webkit2-4.0 || \
           echo "WebKit installation failed, pywebview will use fallback"
           
       - name: 📦 의존성 설치
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install pyinstaller
-          # Linux용 webview 설치
-          pip install --upgrade pywebview[gtk]>=4.0.0
+          
+          # PyGObject를 먼저 설치 (시스템 패키지가 설치된 후)
           pip install PyGObject || echo "PyGObject installation failed, continuing..."
+          
+          # 나머지 의존성 설치
+          pip install -r requirements.txt
+          
+          # Linux용 webview 설치 (GTK 백엔드)
+          pip install --upgrade pywebview[gtk]>=4.0.0 || \
+          pip install --upgrade pywebview>=4.0.0 || \
+          echo "PyWebView installation failed, continuing..."
       
       - name: 🔧 빌드 설정 생성 (자동)
         run: |
@@ -184,12 +204,13 @@ jobs:
           from build_config import BuildConfig
           import json
           
-          config = BuildConfig()
-          config.config['server']['port'] = 8080
-          config.config['modules']['spotify']['redirect_uri'] = 'http://localhost:8080/spotify/callback'
+          build_config = BuildConfig()
+          config = build_config.get_build_config()
+          config['server']['port'] = 8080
+          config['modules']['spotify']['redirect_uri'] = 'http://localhost:8080/spotify/callback'
           
           with open('config_build.json', 'w', encoding='utf-8') as f:
-              json.dump(config.config, f, indent=2, ensure_ascii=False)
+              json.dump(config, f, indent=2, ensure_ascii=False)
           
           print('Build config generated successfully')
           "
