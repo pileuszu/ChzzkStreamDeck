@@ -27,7 +27,12 @@ DEFAULT_CONFIG = {
             "channel_id": "",
             "url_path": "/chat",
             "max_messages": 10,
-            "show_recent_only": True
+            "show_recent_only": True,
+            "single_chat_mode": False,
+            "streamer_align_left": False,
+            "background_enabled": True,
+            "background_opacity": 0.3,
+            "remove_outer_effects": False
         },
         "spotify": {
             "enabled": False,

@@ -309,17 +309,29 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 response = {"success": True, "message": "앱이 종료됩니다..."}
                 self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
                 
-                # 별도 스레드에서 서버 종료
+                # 즉시 강제 종료 (최대한 단순하게)
                 import threading
-                def shutdown_server():
+                def force_shutdown():
                     import time
-                    time.sleep(1)  # 응답 전송 후 잠시 대기
-                    if server_manager:
-                        server_manager.stop_server()
                     import os
-                    os._exit(0)
+                    
+                    time.sleep(0.5)  # 응답 전송 후 짧은 대기
+                    
+                    print("🔥 앱 강제 종료 중...")
+                    
+                    try:
+                        # 바로 강제 종료
+                        os._exit(0)
+                        
+                    except Exception as e:
+                        print(f"강제 종료 중 오류: {e}")
+                        try:
+                            import sys
+                            sys.exit(0)
+                        except:
+                            exit(0)
                 
-                threading.Thread(target=shutdown_server, daemon=True).start()
+                threading.Thread(target=force_shutdown, daemon=True).start()
                 
             except Exception as e:
                 self.send_response(500)
@@ -491,29 +503,33 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
     
     def _get_chat_overlay_html(self):
         """채팅 오버레이 HTML"""
-        # 직접 HTML 반환 (chat_server.py와 동일한 내용)
-        return """<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>치지직 채팅 오버레이</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        # 설정에서 채팅 옵션 가져오기
+        from config import CONFIG_MANAGER
+        config = CONFIG_MANAGER.get_config()
+        chat_config = config.get('modules', {}).get('chat', {})
         
-        body {
-            background: transparent;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
-
+        max_messages = chat_config.get('max_messages', 10)
+        single_chat_mode = chat_config.get('single_chat_mode', False)
+        streamer_align_left = chat_config.get('streamer_align_left', False)
+        background_enabled = chat_config.get('background_enabled', True)
+        background_opacity = chat_config.get('background_opacity', 0.3)
+        remove_outer_effects = chat_config.get('remove_outer_effects', False)
+        
+        # 1개 채팅만 표시하는 경우
+        if single_chat_mode:
+            max_messages = 1
+        
+        # 배경 투명도 값들 미리 계산
+        bg_op_01 = background_opacity * 0.1
+        bg_op_03 = background_opacity * 0.3
+        bg_op_04 = background_opacity * 0.4
+        bg_op_05 = background_opacity * 0.5
+        bg_op_08 = background_opacity * 0.8
+        
+        # 배경 효과 CSS
+        background_effects_css = ""
+        if not remove_outer_effects:
+            background_effects_css = """
         /* 사이버펑크 배경 - 데이터 스트림과 네온 그리드 */
         body::before {
             content: '';
@@ -523,10 +539,8 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             width: 100%;
             height: 100%;
             background: 
-                /* 네온 그리드 */
                 linear-gradient(90deg, rgba(0,255,175,0.03) 1px, transparent 1px),
                 linear-gradient(180deg, rgba(155,77,224,0.03) 1px, transparent 1px),
-                /* 데이터 스트림 파티클 */
                 radial-gradient(2px 2px at 20% 30%, rgba(0,255,175,0.8), transparent),
                 radial-gradient(1px 1px at 80% 20%, rgba(155,77,224,0.6), transparent),
                 radial-gradient(3px 3px at 45% 70%, rgba(255,215,0,0.4), transparent),
@@ -537,7 +551,6 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             z-index: 0;
         }
 
-        /* 추가 홀로그램 레이어 */
         body::after {
             content: '';
             position: fixed;
@@ -545,35 +558,133 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                /* 스캔라인 효과 */
-                repeating-linear-gradient(
-                    0deg,
-                    transparent 0px,
-                    rgba(0,255,175,0.03) 1px,
-                    transparent 2px,
-                    transparent 4px
-                );
+            background: repeating-linear-gradient(0deg, transparent 0px, rgba(0,255,175,0.03) 1px, transparent 2px, transparent 4px);
             animation: scanlines 2s linear infinite;
             pointer-events: none;
             z-index: 1;
         }
         
-        .chat_wrap {
+        @keyframes dataStreamFlow {
+            0% { transform: translateY(0) translateX(0); opacity: 0.4; }
+            50% { transform: translateY(-50px) translateX(25px); opacity: 0.8; }
+            100% { transform: translateY(-100px) translateX(50px); opacity: 0.2; }
+        }
+
+        @keyframes cyberGrid {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.02); }
+        }
+
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+            """
+        
+        # 채팅박스 배경 CSS
+        if background_enabled:
+            chat_background_css = f"""
+        .chat_box.naver.chat:not(.streamer) {{
+            background: linear-gradient(135deg, rgba(0,255,175,{bg_op_01}) 0%, rgba(0,255,175,{bg_op_03}) 30%, rgba(0,255,175,{bg_op_04}) 50%, rgba(0,255,175,{bg_op_03}) 70%, rgba(0,255,175,{bg_op_01}) 100%);
+            border: 1px solid rgba(0,255,175,{bg_op_08});
+            backdrop-filter: blur(20px);
+            box-shadow: 0 12px 20px rgba(0,255,175,{bg_op_05}), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 15px rgba(0,255,175,{bg_op_03});
+        }}
+
+        .chat_box.naver.chat.streamer {{
+            background: linear-gradient(135deg, rgba(155,77,224,{bg_op_01}) 0%, rgba(155,77,224,{bg_op_03}) 30%, rgba(155,77,224,{bg_op_04}) 50%, rgba(155,77,224,{bg_op_03}) 70%, rgba(155,77,224,{bg_op_01}) 100%);
+            border: 1px solid rgba(155,77,224,{bg_op_08});
+            backdrop-filter: blur(20px);
+            box-shadow: 0 12px 20px rgba(155,77,224,{bg_op_05}), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 15px rgba(155,77,224,{bg_op_03});
+        }}
+            """
+        else:
+            chat_background_css = """
+        .chat_box.naver.chat:not(.streamer) {
+            background: transparent;
+            border: 1px solid rgba(0, 255, 175, 0.25);
+        }
+
+        .chat_box.naver.chat.streamer {
+            background: transparent;
+            border: 1px solid rgba(155, 77, 224, 0.25);
+        }
+            """
+        
+        # 스트리머 정렬 CSS
+        if streamer_align_left:
+            streamer_css = """
+        .chat_box.naver.chat.streamer {
+            align-self: flex-start !important;
+            border-radius: 25px 25px 25px 8px !important;
+            animation: messageEntrance 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+            transform: translateX(-120px) rotateY(-15deg) scale(0.8);
+        }
+        
+        .chat_box.naver.chat.streamer::before {
+            content: '⭐';
+            position: absolute;
+            top: -12px;
+            right: -12px !important;
+            left: auto !important;
+        }
+            """
+        else:
+            streamer_css = """
+        .chat_box.naver.chat.streamer {
+            align-self: flex-end;
+            border-radius: 25px 25px 8px 25px;
+            animation: messageEntranceRight 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            transform: translateX(120px) rotateY(15deg) scale(0.8);
+        }
+        
+        .chat_box.naver.chat.streamer::before {
+            content: '⭐';
+            position: absolute;
+            top: -12px;
+            left: -12px;
+        }
+            """
+        
+        return """<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>치지직 채팅 오버레이</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            background: transparent;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }}
+
+        {background_effects_css}
+        
+        .chat_wrap {{
             position: fixed;
             top: 50%;
-            left: 10%; /* 왼쪽끝(0%)과 중앙점(50%) 사이 */
-            transform: translateY(-50%); /* 상하 중앙 정렬 */
-            width: 640px; /* 글로우 효과를 위해 너비도 약간 증가 */
-            height: 720px; /* 글로우 효과를 위해 높이도 약간 증가 */
+            left: 10%;
+            transform: translateY(-50%);
+            width: 640px;
+            height: 720px;
             background: transparent;
             z-index: 1000;
             font-family: 'Noto Sans KR', sans-serif;
             overflow: hidden;
-            padding: 60px; /* 글로우 효과가 잘리지 않도록 패딩 대폭 증가 */
-        }
+            padding: 60px;
+        }}
 
-        .chat_list {
+        .chat_list {{
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -582,24 +693,11 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             overflow: hidden;
             position: relative;
             z-index: 2;
-            /* 위쪽 자연스러운 페이드아웃 마스크 */
-            mask: linear-gradient(to bottom, 
-                transparent 0%, 
-                rgba(0,0,0,0.05) 5%, 
-                rgba(0,0,0,0.2) 15%, 
-                rgba(0,0,0,0.6) 30%, 
-                black 45%, 
-                black 100%);
-            -webkit-mask: linear-gradient(to bottom, 
-                transparent 0%, 
-                rgba(0,0,0,0.05) 5%, 
-                rgba(0,0,0,0.2) 15%, 
-                rgba(0,0,0,0.6) 30%, 
-                black 45%, 
-                black 100%);
-        }
+            mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.05) 5%, rgba(0,0,0,0.2) 15%, rgba(0,0,0,0.6) 30%, black 45%, black 100%);
+            -webkit-mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.05) 5%, rgba(0,0,0,0.2) 15%, rgba(0,0,0,0.6) 30%, black 45%, black 100%);
+        }}
 
-        .chat_box.naver.chat {
+        .chat_box.naver.chat {{
             padding: 18px 25px;
             margin: 20px 40px;
             position: relative;
@@ -610,14 +708,14 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             max-width: calc(100% - 80px);
             filter: drop-shadow(0 0 0 transparent);
             overflow: visible;
-        }
+            border-radius: 25px 25px 25px 8px;
+        }}
 
-        /* 스트리머용 왼쪽 상단 별 */
-        .chat_box.naver.chat.streamer::before {
-            content: '⭐';
-            position: absolute;
-            top: -12px;
-            left: -12px;
+        {streamer_css}
+
+        {chat_background_css}
+
+        .chat_box.naver.chat.streamer::before {{
             width: 28px;
             height: 28px;
             display: flex;
@@ -629,9 +727,9 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             animation: starTwinkle 1.5s ease-in-out infinite alternate;
             z-index: 100;
             filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.9));
-        }
+        }}
 
-        .chat_box.naver.chat p.name {
+        .chat_box.naver.chat p.name {{
             display: block;
             font-weight: 900;
             font-size: 15px;
@@ -640,19 +738,17 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             letter-spacing: 2px;
             position: relative;
             overflow: hidden;
-        }
+        }}
 
-        .chat_box.naver.chat.streamer p.name {
+        .chat_box.naver.chat.streamer p.name {{
             color: #9b4de0;
-            text-shadow: 
-                0 0 15px rgba(155, 77, 224, 0.9),
-                0 0 30px rgba(155, 77, 224, 0.5),
-                0 0 45px rgba(155, 77, 224, 0.3);
+            text-shadow: 0 0 15px rgba(155, 77, 224, 0.9), 0 0 30px rgba(155, 77, 224, 0.5), 0 0 45px rgba(155, 77, 224, 0.3);
             animation: royalGlow 3s ease-in-out infinite alternate;
-        }
+        }}
 
-        .chat_box.naver.chat:not(.streamer) p.name {
+        .chat_box.naver.chat:not(.streamer) p.name {{
             color: #00FFAF;
+            text-shadow: 0 0 15px rgba(0, 255, 175, 0.9), 0 0 30px rgba(0, 255, 175, 0.5), 0 0 45px rgba(0, 255, 175, 0.3);
             text-shadow: 
                 0 0 15px rgba(0, 255, 175, 0.9),
                 0 0 30px rgba(0, 255, 175, 0.5),
@@ -887,8 +983,8 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                             
                             container.appendChild(messageDiv);
                             
-                            // 최대 15개 메시지 유지 - 오래된 것부터 제거
-                            while (container.children.length > 15) {
+                            // 최대 메시지 수 유지 - 설정에 따라 조정
+                            while (container.children.length > """ + str(max_messages) + """) {
                                 const firstChild = container.firstChild;
                                 if (firstChild) {
                                     firstChild.remove();
@@ -1524,6 +1620,72 @@ def main():
     """메인 함수"""
     global server_manager, APP_MODE
     
+    # 종료 신호 처리기 등록
+    import signal
+    import atexit
+    
+    def signal_handler(signum, frame):
+        """시그널 핸들러"""
+        print(f"\n📶 종료 신호 수신: {signum}")
+        cleanup_and_exit()
+    
+    def cleanup_and_exit():
+        """정리 작업 후 종료"""
+        try:
+            print("🧹 정리 작업 중...")
+            if server_manager:
+                server_manager.stop_server()
+            
+            import psutil
+            import platform
+            import subprocess
+            
+            current_pid = os.getpid()
+            print(f"🔄 프로세스 정리 중... (PID: {current_pid})")
+            
+            # 모든 관련 프로세스 종료
+            try:
+                current_process = psutil.Process(current_pid)
+                children = current_process.children(recursive=True)
+                
+                for child in children:
+                    try:
+                        child.terminate()
+                    except:
+                        pass
+                
+                time.sleep(1)
+                
+                for child in children:
+                    try:
+                        if child.is_running():
+                            child.kill()
+                    except:
+                        pass
+                        
+            except Exception as e:
+                print(f"⚠️  프로세스 정리 중 오류: {e}")
+            
+            # Windows에서 추가 정리
+            if platform.system() == "Windows":
+                try:
+                    subprocess.run(['taskkill', '/f', '/pid', str(current_pid)], 
+                                 shell=True, capture_output=True, timeout=3)
+                except:
+                    pass
+            
+            print("✅ 정리 완료")
+            
+        except Exception as e:
+            print(f"❌ 정리 중 오류: {e}")
+        finally:
+            os._exit(0)
+    
+    # 시그널 핸들러 등록
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    atexit.register(cleanup_and_exit)
+    
     # 명령줄 인수 파싱
     parser = argparse.ArgumentParser(description='네온 오버레이 통합 시스템')
     parser.add_argument('--app', action='store_true', help='데스크톱 앱 모드로 실행')
@@ -1586,8 +1748,54 @@ def start_desktop_app(port):
         # 서버가 시작될 때까지 잠시 대기
         time.sleep(2)
         
-        # 앱 창 설정 (메인 스레드에서 실행)
-        webview.create_window(
+        # 매우 간단한 종료 함수
+        def simple_shutdown():
+            """매우 간단하고 확실한 종료"""
+            print("\n🔥 앱 종료 중...")
+            try:
+                # webview 창 닫기 시도
+                try:
+                    webview.destroy_window()
+                except:
+                    pass
+                
+                # 서버 정리
+                if server_manager:
+                    try:
+                        server_manager.stop_server()
+                    except:
+                        pass
+                
+                # 바로 강제 종료
+                import os
+                print("강제 종료 실행")
+                os._exit(0)
+                
+            except Exception as e:
+                print(f"❌ 종료 중 오류: {e}")
+                try:
+                    import sys
+                    sys.exit(0)
+                except:
+                    # 최후 수단
+                    exit(0)
+        
+        # 백그라운드에서 강제 종료를 처리할 스레드
+        shutdown_thread = None
+        
+        # API 클래스 (webview에서 호출 가능)
+        class AppAPI:
+            def shutdown_app(self):
+                """JavaScript에서 호출 가능한 종료 함수"""
+                nonlocal shutdown_thread
+                print("📱 webview에서 종료 요청됨")
+                if shutdown_thread is None or not shutdown_thread.is_alive():
+                    shutdown_thread = threading.Thread(target=simple_shutdown, daemon=True)
+                    shutdown_thread.start()
+                return "Shutting down..."
+        
+        # 앱 창 설정
+        window = webview.create_window(
             title="🎮 스트리밍 컨트롤 센터",
             url=f"http://localhost:{port}/admin",
             width=1200,
@@ -1596,11 +1804,34 @@ def start_desktop_app(port):
             resizable=True,
             shadow=True,
             on_top=False,
-            text_select=True
+            text_select=True,
+            js_api=AppAPI()  # API 등록
         )
         
-        # 창 시작 (메인 스레드에서 실행되어야 함)
+        # 이벤트 핸들러 등록
+        def on_window_closing():
+            """창이 닫히기 전 호출"""
+            print("🚪 창 닫기 감지됨")
+            simple_shutdown()
+        
+        def on_window_closed():
+            """창이 닫힌 후 호출"""
+            print("🚪 창이 완전히 닫힘")
+            simple_shutdown()
+        
+        # webview 이벤트 등록
+        window.events.closing += on_window_closing
+        window.events.closed += on_window_closed
+        
+        print("🖥️  webview 앱 시작 중...")
+        
+        # 창 시작 (블로킹)
         webview.start(debug=False)
+        
+        # webview가 종료되면 여기 도달
+        print("🏁 webview 종료됨")
+        simple_shutdown()
+        
     except Exception as e:
         logger.error(f"데스크톱 앱 시작 실패: {e}")
         print("⚠️  브라우저 모드로 대체합니다.")
@@ -1612,7 +1843,9 @@ def start_desktop_app(port):
                 time.sleep(1)
         except KeyboardInterrupt:
             print("\n👋 네온 오버레이 시스템을 종료합니다.")
-            server_manager.stop_server()
+            if server_manager:
+                server_manager.stop_server()
+            cleanup_and_exit()
 
 if __name__ == "__main__":
     main() 

@@ -476,6 +476,48 @@ def get_neon_admin_template():
                         <label>채널 ID</label>
                         <input type="text" id="chat-channel-id" placeholder="치지직 채널 ID를 입력하세요">
                     </div>
+                    
+                    <div class="form-group">
+                        <label>최대 채팅 수</label>
+                        <select id="chat-max-messages">
+                            <option value="1">1개 (최신 채팅만)</option>
+                            <option value="5">5개</option>
+                            <option value="10">10개 (기본)</option>
+                            <option value="15">15개</option>
+                            <option value="20">20개</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>스트리머 채팅 정렬</label>
+                        <select id="chat-streamer-align">
+                            <option value="false">오른쪽 정렬 (기본)</option>
+                            <option value="true">왼쪽 정렬</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>채팅 배경</label>
+                        <select id="chat-background-enabled">
+                            <option value="true">배경 있음 (기본)</option>
+                            <option value="false">투명 배경</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>배경 투명도</label>
+                        <input type="range" id="chat-background-opacity" min="0.1" max="1" step="0.1" value="0.3">
+                        <span id="chat-opacity-value">30%</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>외부 효과</label>
+                        <select id="chat-remove-outer-effects">
+                            <option value="false">사이버펑크 효과 있음 (기본)</option>
+                            <option value="true">외부 효과 제거</option>
+                        </select>
+                    </div>
+                    
                     <div class="url-container">
                         <div class="url-label">OBS 브라우저 소스 URL</div>
                         <div class="url-content">
@@ -604,7 +646,20 @@ def get_neon_admin_template():
         });
         
         function setupEventListeners() {
-            // 강도 슬라이더 이벤트는 더 이상 필요 없음
+            // 투명도 슬라이더 이벤트 리스너
+            const opacitySlider = document.getElementById('chat-background-opacity');
+            if (opacitySlider) {
+                opacitySlider.addEventListener('input', updateOpacityDisplay);
+            }
+        }
+        
+        function updateOpacityDisplay() {
+            const slider = document.getElementById('chat-background-opacity');
+            const display = document.getElementById('chat-opacity-value');
+            if (slider && display) {
+                const value = Math.round(parseFloat(slider.value) * 100);
+                display.textContent = value + '%';
+            }
         }
         
         async function loadConfig() {
@@ -684,9 +739,15 @@ def get_neon_admin_template():
             const modules = currentConfig.modules || {};
             
             // 채팅 모듈
-            if (modules.chat) {
-                document.getElementById('chat-channel-id').value = modules.chat.channel_id || '';
-            }
+                            if (modules.chat) {
+                    document.getElementById('chat-channel-id').value = modules.chat.channel_id || '';
+                    document.getElementById('chat-max-messages').value = modules.chat.max_messages || '10';
+                    document.getElementById('chat-streamer-align').value = modules.chat.streamer_align_left || 'false';
+                    document.getElementById('chat-background-enabled').value = modules.chat.background_enabled !== false ? 'true' : 'false';
+                    document.getElementById('chat-background-opacity').value = modules.chat.background_opacity || '0.3';
+                    document.getElementById('chat-remove-outer-effects').value = modules.chat.remove_outer_effects || 'false';
+                    updateOpacityDisplay();
+                }
             
             // 스포티파이 모듈
             if (modules.spotify) {
@@ -699,9 +760,15 @@ def get_neon_admin_template():
         
         async function saveModuleConfig(moduleName) {
             // 현재 UI 값들을 설정에 반영
-            if (moduleName === 'chat') {
-                currentConfig.modules.chat.channel_id = document.getElementById('chat-channel-id').value;
-            } else if (moduleName === 'spotify') {
+                            if (moduleName === 'chat') {
+                    currentConfig.modules.chat.channel_id = document.getElementById('chat-channel-id').value;
+                    currentConfig.modules.chat.max_messages = parseInt(document.getElementById('chat-max-messages').value);
+                    currentConfig.modules.chat.streamer_align_left = document.getElementById('chat-streamer-align').value === 'true';
+                    currentConfig.modules.chat.background_enabled = document.getElementById('chat-background-enabled').value === 'true';
+                    currentConfig.modules.chat.background_opacity = parseFloat(document.getElementById('chat-background-opacity').value);
+                    currentConfig.modules.chat.remove_outer_effects = document.getElementById('chat-remove-outer-effects').value === 'true';
+                    currentConfig.modules.chat.single_chat_mode = parseInt(document.getElementById('chat-max-messages').value) === 1;
+                } else if (moduleName === 'spotify') {
                 currentConfig.modules.spotify.client_id = document.getElementById('spotify-client-id').value;
                 currentConfig.modules.spotify.client_secret = document.getElementById('spotify-client-secret').value;
                 currentConfig.modules.spotify.redirect_uri = document.getElementById('spotify-redirect-uri').value;
@@ -737,14 +804,22 @@ def get_neon_admin_template():
             });
         }
         
-        function showNotification(message) {
+        function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
             notification.textContent = message;
-            notification.classList.add('show');
+            notification.className = 'save-notification show';
+            
+            if (type === 'error') {
+                notification.style.background = 'linear-gradient(45deg, #ff1744, #d50000)';
+                notification.style.color = '#ffffff';
+            } else {
+                notification.style.background = 'linear-gradient(45deg, #00FFAF, #9b4de0)';
+                notification.style.color = '#ffffff';
+            }
             
             setTimeout(() => {
                 notification.classList.remove('show');
-            }, 3000);
+            }, type === 'error' ? 5000 : 3000);
         }
         
         async function exportConfig() {
@@ -832,33 +907,54 @@ def get_neon_admin_template():
         }
 
         async function shutdownApp() {
-            if (confirm('정말로 앱을 종료하시겠습니까?')) {
+            if (confirm('정말로 앱을 종료하시겠습니까?\\n\\n앱과 CMD 창이 모두 종료됩니다.')) {
                 try {
-                    const response = await fetch('/api/shutdown', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
+                    showNotification('앱 종료 중...', 'error');
                     
-                    if (response.ok) {
-                        showNotification('앱이 종료됩니다...');
-                        
-                        // 3초 후 창 닫기 시도
-                        setTimeout(() => {
-                            if (window.close) {
-                                window.close();
-                            } else {
-                                alert('앱이 종료되었습니다. 브라우저 탭을 닫아주세요.');
-                            }
-                        }, 3000);
-                    } else {
-                        showNotification('앱 종료 요청 실패');
+                    // 1. webview API 시도 (최우선)
+                    if (window.pywebview && window.pywebview.api) {
+                        try {
+                            await window.pywebview.api.shutdown_app();
+                            return; // 성공하면 바로 끝
+                        } catch (e) {
+                            console.log('webview API 실패:', e);
+                        }
                     }
                     
+                    // 2. 서버 API 종료 요청
+                    try {
+                        await fetch('/api/shutdown', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            signal: AbortSignal.timeout(2000)
+                        });
+                    } catch (e) {
+                        console.log('서버 API 실패:', e);
+                    }
+                    
+                    // 3. 창 닫기 시도
+                    setTimeout(() => {
+                        try {
+                            if (window.close) window.close();
+                        } catch (e) {
+                            console.log('창 닫기 실패:', e);
+                        }
+                        
+                        // 최종 백업 - 페이지 교체
+                        setTimeout(() => {
+                            document.body.innerHTML = `
+                                <div style="background: #1a1a2e; color: white; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: Arial;">
+                                    <h1 style="color: #ff1744; margin-bottom: 20px;">🚪 앱이 종료되었습니다</h1>
+                                    <p style="font-size: 18px; margin-bottom: 10px;">이 창을 닫아주세요.</p>
+                                    <button onclick="window.close()" style="margin-top: 20px; padding: 10px 20px; background: #ff1744; color: white; border: none; border-radius: 5px; cursor: pointer;">창 닫기</button>
+                                </div>
+                            `;
+                        }, 1000);
+                    }, 500);
+                    
                 } catch (error) {
-                    console.error('앱 종료 요청 실패:', error);
-                    showNotification('앱 종료 요청 실패');
+                    console.error('종료 오류:', error);
+                    showNotification('종료 중 오류가 발생했습니다. 수동으로 창을 닫아주세요.', 'error');
                 }
             }
         }

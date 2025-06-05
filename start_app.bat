@@ -1,120 +1,113 @@
 @echo off
 chcp 65001 >nul
+setlocal
 
-rem 스트리밍 컨트롤 센터 - 데스크톱 앱 모드 실행 스크립트
-rem 실행: start_app.bat 더블클릭 또는 터미널에서 start_app.bat
-
-echo 🎮 스트리밍 컨트롤 센터 시작 중...
-echo 📱 데스크톱 앱 모드로 실행합니다.
+echo ====================================
+echo 🎮 치지직 스트림덱 컨트롤러 시작
+echo ====================================
 echo.
 
-rem Python 설치 및 버전 확인
+rem Python 설치 확인
 python --version >nul 2>&1
 if errorlevel 1 (
     echo ❌ 오류: Python이 설치되지 않았습니다.
-    echo    Python 3.13.3을 설치한 후 다시 실행해주세요.
+    echo    Python 3.7 이상을 설치한 후 다시 실행해주세요.
     echo    설치 링크: https://www.python.org/downloads/
-    pause
-    exit /b 1
-)
-
-rem Python 버전 확인 (3.13.3 권장)
-for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
-echo ✅ Python %PYTHON_VERSION% detected
-
-rem 권장 버전과 비교
-echo %PYTHON_VERSION% | findstr "3.13.3" >nul
-if not errorlevel 1 (
-    echo ✅ Recommended Python version 3.13.3 confirmed
-) else (
-    echo ⚠️  Warning: Current Python version is %PYTHON_VERSION%
-    echo    Recommended version is 3.13.3 for optimal compatibility
-    echo    Some packages may not work correctly with different versions
     echo.
-)
-
-rem 현재 디렉토리 확인
-if not exist "neon" (
-    echo ❌ 오류: neon 폴더를 찾을 수 없습니다.
-    echo    스크립트를 프로젝트 루트 디렉토리에서 실행해주세요.
     pause
     exit /b 1
 )
 
-rem 가상환경 생성 및 활성화
+rem Python 버전 확인
+for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
+echo ✅ Python %PYTHON_VERSION% 확인됨
+
+rem 프로젝트 디렉토리 확인
+if not exist "main" (
+    echo ❌ 오류: main 폴더를 찾을 수 없습니다.
+    echo    이 스크립트를 프로젝트 루트에서 실행해주세요.
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "main.py" (
+    echo ❌ 오류: main.py 파일을 찾을 수 없습니다.
+    echo.
+    pause
+    exit /b 1
+)
+
+rem 가상환경 확인 및 생성
 if not exist ".venv" (
-    echo 🔨 가상환경을 생성 중...
+    echo 🔨 가상환경 생성 중...
     python -m venv .venv
     if errorlevel 1 (
-        echo ❌ 오류: 가상환경 생성에 실패했습니다.
+        echo ❌ 가상환경 생성 실패
         pause
         exit /b 1
     )
-    echo ✅ 가상환경이 생성되었습니다.
+    echo ✅ 가상환경 생성 완료
+) else (
+    echo ✅ 가상환경 확인됨
 )
 
-echo 🐍 가상환경 활성화 중...
+rem 가상환경 활성화
+echo 🐍 가상환경 활성화...
 call .venv\Scripts\activate.bat
 if errorlevel 1 (
-    echo ❌ 오류: 가상환경 활성화에 실패했습니다.
+    echo ❌ 가상환경 활성화 실패
     pause
     exit /b 1
 )
 
-rem 의존성 설치 확인 및 설치
-if not exist "requirements.txt" (
-    echo ❌ 오류: requirements.txt 파일을 찾을 수 없습니다.
+rem 의존성 설치
+echo 📦 의존성 패키지 확인 및 설치...
+pip install --quiet --upgrade pip
+pip install --quiet -r requirements.txt
+if errorlevel 1 (
+    echo ❌ 패키지 설치 실패
+    echo.
+    echo 수동으로 설치해보세요:
+    echo pip install flask flask-socketio requests beautifulsoup4 psutil pywebview
+    echo.
     pause
     exit /b 1
 )
 
-echo 📦 Checking dependencies...
+echo ✅ 모든 준비 완료
 
-rem 의존성 체크 로그 파일 생성 (.deps_check 폴더에)
-if not exist ".deps_check" mkdir ".deps_check"
-set DEPS_LOG=".deps_check\package_status.log"
+rem 현재 배치 파일의 PID 저장 (종료 처리용)
+set BATCH_PID=%RANDOM%
 
-rem 설치된 패키지 목록을 로그 파일에 저장
-echo 🔍 Checking installed packages...
-pip list --format=freeze > "%DEPS_LOG%" 2>nul
+echo.
+echo 🚀 스트리밍 컨트롤 센터 시작...
+echo.
+echo 💡 사용법:
+echo    - 관리패널에서 '앱 종료' 버튼으로 완전 종료
+echo    - 또는 이 창에서 Ctrl+C로 강제 종료
+echo    - 창을 최소화하지 마세요 (성능 저하 방지)
+echo.
+echo 🔧 프로세스 ID: %BATCH_PID%
+echo ====================================
+echo.
 
-rem requirements.txt에서 각 패키지 확인
-echo 🔍 Checking required packages...
-for /f "tokens=*" %%i in (requirements.txt) do (
-    echo %%i | findstr /r "^[a-zA-Z]" >nul
-    if not errorlevel 1 (
-        for /f "tokens=1 delims==^>=^<" %%j in ("%%i") do (
-            pip show "%%j" >nul 2>&1
-            if errorlevel 1 (
-                echo 📥 Installing %%j...
-                echo [%date% %time%] Installing: %%j >> "%DEPS_LOG%"
-                pip install "%%i" --quiet
-                if errorlevel 1 (
-                    echo ❌ Failed to install %%j
-                    echo [%date% %time%] Failed: %%j >> "%DEPS_LOG%"
-                    pause
-                    exit /b 1
-                ) else (
-                    echo ✅ %%j installed
-                    echo [%date% %time%] Success: %%j >> "%DEPS_LOG%"
-                )
-            ) else (
-                echo ✅ %%j already installed
-                echo [%date% %time%] Already installed: %%j >> "%DEPS_LOG%"
-            )
-        )
-    )
-)
-
-echo 📝 Dependency check log saved to %DEPS_LOG%
-
-echo ✅ All dependencies installed successfully.
-
-rem Python 실행
-echo 🚀 Starting application...
+rem 메인 애플리케이션 실행
 python main.py --app
 
-rem 스크립트 종료 후 대기
+rem 앱이 정상 종료된 경우
 echo.
-echo 앱이 종료되었습니다.
-pause 
+echo 🏁 앱이 정상 종료되었습니다.
+echo.
+
+rem 프로세스 정리
+echo 🧹 프로세스 정리 중...
+taskkill /f /im python.exe /fi "commandline eq *main.py*" 2>nul >nul
+taskkill /f /im pythonw.exe /fi "commandline eq *main.py*" 2>nul >nul
+
+echo ✅ 정리 완료
+echo.
+echo 👋 3초 후 창이 자동으로 닫힙니다...
+timeout /t 3 /nobreak >nul
+
+exit /b 0 

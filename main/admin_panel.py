@@ -151,32 +151,107 @@ class AdminPanelLogicHandler(BaseHTTPRequestHandler):
                             import signal
                             import subprocess
                             import psutil
+                            import sys
+                            import platform
                             
-                            # 현재 프로세스와 모든 자식 프로세스 종료
-                            current_process = psutil.Process()
-                            children = current_process.children(recursive=True)
+                            current_pid = os.getpid()
+                            logger.info(f"현재 프로세스 PID: {current_pid}")
                             
-                            for child in children:
+                            # 1. 모든 관련 프로세스 찾기 및 종료
+                            try:
+                                current_process = psutil.Process(current_pid)
+                                
+                                # 부모 프로세스도 찾기 (CMD 창 등)
+                                parent_process = None
                                 try:
-                                    child.terminate()
+                                    parent_process = current_process.parent()
+                                    logger.info(f"부모 프로세스: {parent_process.pid if parent_process else 'None'}")
                                 except:
                                     pass
-                            
-                            # 2초 후 강제 종료
-                            time.sleep(2)
-                            for child in children:
+                                
+                                # 모든 하위 프로세스 수집
+                                all_processes = []
                                 try:
-                                    child.kill()
+                                    children = current_process.children(recursive=True)
+                                    all_processes.extend(children)
+                                    all_processes.append(current_process)
+                                    
+                                    # 부모가 cmd.exe인 경우 포함
+                                    if parent_process and parent_process.name().lower() in ['cmd.exe', 'conhost.exe']:
+                                        all_processes.append(parent_process)
+                                        
+                                except Exception as e:
+                                    logger.warning(f"프로세스 수집 중 오류: {e}")
+                                
+                                # Step 1: 정상 종료 시도
+                                logger.info("Step 1: 정상 종료 시도")
+                                for proc in all_processes:
+                                    try:
+                                        logger.info(f"Terminating process: {proc.pid} ({proc.name()})")
+                                        proc.terminate()
+                                    except Exception as e:
+                                        logger.warning(f"Failed to terminate {proc.pid}: {e}")
+                                
+                                # 2초 대기
+                                time.sleep(2)
+                                
+                                # Step 2: 강제 종료
+                                logger.info("Step 2: 강제 종료 시도")
+                                for proc in all_processes:
+                                    try:
+                                        if proc.is_running():
+                                            logger.info(f"Killing process: {proc.pid} ({proc.name()})")
+                                            proc.kill()
+                                    except Exception as e:
+                                        logger.warning(f"Failed to kill {proc.pid}: {e}")
+                                
+                                time.sleep(1)
+                                
+                            except Exception as e:
+                                logger.error(f"psutil 프로세스 관리 중 오류: {e}")
+                            
+                            # 2. Windows 시스템 명령으로 강제 종료
+                            if platform.system() == "Windows":
+                                try:
+                                    logger.info("Windows taskkill 명령 실행")
+                                    # 현재 프로세스와 관련된 모든 Python 프로세스 종료
+                                    subprocess.run(['taskkill', '/f', '/pid', str(current_pid)], 
+                                                 shell=True, capture_output=True, timeout=5)
+                                    
+                                    # CMD 창도 함께 종료
+                                    subprocess.run(['taskkill', '/f', '/im', 'cmd.exe'], 
+                                                 shell=True, capture_output=True, timeout=5)
+                                    
+                                    # 관련 Python 프로세스들도 종료
+                                    subprocess.run(['taskkill', '/f', '/im', 'python.exe'], 
+                                                 shell=True, capture_output=True, timeout=5)
+                                    
+                                except Exception as e:
+                                    logger.error(f"taskkill 명령 실행 중 오류: {e}")
+                            
+                            # 3. 최종 강제 종료 시도
+                            try:
+                                logger.info("최종 강제 종료")
+                                os._exit(0)
+                            except:
+                                # 시스템 레벨 종료
+                                try:
+                                    import ctypes
+                                    ctypes.windll.kernel32.ExitProcess(0)
                                 except:
                                     pass
-                            
-                            # 메인 프로세스 종료
-                            os._exit(0)
                             
                         except Exception as e:
-                            logger.error(f"앱 종료 중 오류: {e}")
-                            # 강제 종료
-                            os._exit(1)
+                            logger.error(f"앱 종료 중 최종 오류: {e}")
+                            # 마지막 수단
+                            try:
+                                os._exit(1)
+                            except:
+                                import ctypes
+                                try:
+                                    ctypes.windll.kernel32.TerminateProcess(-1, 0)
+                                except:
+                                    pass
                     
                     threading.Thread(target=shutdown_app, daemon=True).start()
                     

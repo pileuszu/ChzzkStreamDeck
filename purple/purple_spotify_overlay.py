@@ -258,13 +258,16 @@ def get_purple_spotify_template():
         }
         
         function updateProgressRealtime() {
-            if (isPlaying && totalDurationMs > 0) {
+            if (isPlaying && lastFetchTime > 0 && totalDurationMs > 0) {
                 const now = Date.now();
-                const elapsedSinceLastFetch = now - lastFetchTime;
-                const estimatedCurrentMs = lastProgressMs + elapsedSinceLastFetch;
+                const elapsed = now - lastFetchTime;
+                const estimatedCurrentMs = lastProgressMs + elapsed;
                 
                 if (estimatedCurrentMs <= totalDurationMs) {
                     updateProgress(estimatedCurrentMs, totalDurationMs);
+                    // 다음 업데이트를 위해 시간 갱신
+                    lastProgressMs = estimatedCurrentMs;
+                    lastFetchTime = now;
                 }
             }
         }
@@ -307,7 +310,7 @@ def get_purple_spotify_template():
                 if (response.ok) {
                     const data = await response.json();
                     
-                    if (data.is_playing && data.track_name && data.track_name !== '재생 중인 음악 없음') {
+                    if (data.track_name && data.track_name !== '재생 중인 음악 없음') {
                         document.getElementById('spotifyContainer').classList.remove('hidden');
                         updateTrackInfo(data);
                         
@@ -317,18 +320,25 @@ def get_purple_spotify_template():
                         totalDurationMs = data.duration_ms || 0;
                         
                         updateProgress(lastProgressMs, totalDurationMs);
-                        isPlaying = true;
+                        isPlaying = data.is_playing || false;
+                        
+                        // Marquee 효과 제어
+                        const trackNameEl = document.getElementById('trackName');
+                        if (isPlaying) {
+                            trackNameEl.style.animationPlayState = 'running';
+                        } else {
+                            trackNameEl.style.animationPlayState = 'paused';
+                        }
                     } else {
                         document.getElementById('spotifyContainer').classList.add('hidden');
                         isPlaying = false;
                     }
                 } else {
-                    document.getElementById('spotifyContainer').classList.add('hidden');
+                    // API 호출 실패시에는 숨기지 않고 기존 상태 유지
                     isPlaying = false;
                 }
             } catch (error) {
                 console.error('Spotify 데이터 가져오기 실패:', error);
-                document.getElementById('spotifyContainer').classList.add('hidden');
                 isPlaying = false;
             }
         }
@@ -336,11 +346,11 @@ def get_purple_spotify_template():
         // 초기 로드
         fetchCurrentTrack();
         
-        // 3초마다 서버에서 데이터 업데이트
-        setInterval(fetchCurrentTrack, 3000);
+        // 5초마다 서버에서 데이터 업데이트
+        setInterval(fetchCurrentTrack, 5000);
         
-        // 1초마다 진행률 실시간 업데이트 (로컬 계산)
-        setInterval(updateProgressRealtime, 1000);
+        // 100ms마다 진행률 실시간 업데이트 (로컬 계산)
+        setInterval(updateProgressRealtime, 100);
     </script>
 </body>
 </html>"""
