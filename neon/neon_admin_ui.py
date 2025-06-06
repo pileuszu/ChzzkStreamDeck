@@ -958,19 +958,34 @@ def get_neon_admin_template():
             document.getElementById('config-import').click();
         }
         
-        function handleConfigImport(event) {
+        async function handleConfigImport(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = async function(e) {
                     try {
                         const importedConfig = JSON.parse(e.target.result);
-                        currentConfig = importedConfig;
-                        updateUI();
-                        saveConfig();
-                        showNotification('설정을 가져왔습니다!');
+                        
+                        // 서버에 설정 가져오기 요청
+                        const response = await fetch('/api/config/import', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ config: importedConfig })
+                        });
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            currentConfig = importedConfig;
+                            updateUI();
+                            showNotification('설정을 가져왔습니다!');
+                        } else {
+                            showNotification('설정 가져오기 실패: ' + result.message, 'error');
+                        }
                     } catch (error) {
-                        alert('잘못된 설정 파일입니다.');
+                        console.error('설정 파일 처리 오류:', error);
+                        showNotification('잘못된 설정 파일입니다.', 'error');
                     }
                 };
                 reader.readAsText(file);

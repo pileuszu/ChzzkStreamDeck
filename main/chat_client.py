@@ -26,7 +26,7 @@ class ChzzkChatClient:
         ]
     
     def get_chat_channel_id_sync(self):
-        """채팅 채널 ID 조회 (동기 방식) - 성공했던 간단한 로직"""
+        """채팅 채널 ID 조회 (동기 방식) - Old version과 동일한 검증된 로직"""
         # 1단계: 채널 정보 조회로 방송 상태 확인
         channel_info_url = f"https://api.chzzk.naver.com/service/v1/channels/{self.channel_id}"
         
@@ -45,9 +45,9 @@ class ChzzkChatClient:
                         logger.info(f"채널명: {channel_name}")
                         logger.info(f"방송 상태: {'방송 중' if is_live else '방송 종료'}")
                         
+                        # 방송이 꺼져있어도 채팅방 접근 허용 (Old version 방식)
                         if not is_live:
-                            logger.warning("현재 방송이 꺼져있습니다.")
-                            return False
+                            logger.warning("현재 방송이 꺼져있지만 채팅방 연결을 시도합니다.")
                     else:
                         logger.error("채널 정보를 찾을 수 없습니다.")
                         return False
@@ -74,7 +74,7 @@ class ChzzkChatClient:
                     if response.status == 200:
                         data = json.loads(response.read().decode('utf-8'))
                         
-                        # 채팅 채널 ID 추출
+                        # 채팅 채널 ID 추출 (Old version과 동일한 방식)
                         chat_channel_id = None
                         if 'content' in data and data['content'] and 'chatChannelId' in data['content']:
                             chat_channel_id = data['content']['chatChannelId']
@@ -86,10 +86,13 @@ class ChzzkChatClient:
                             logger.info(f"채팅 채널 ID 획득: {self.chat_channel_id}")
                             return True
                         else:
+                            logger.debug(f"채팅 채널 ID 없음 - 다음 API 시도: {endpoint}")
                             continue
                     else:
+                        logger.debug(f"API 응답 실패 ({response.status}) - 다음 API 시도: {endpoint}")
                         continue
             except Exception as e:
+                logger.debug(f"API 호출 실패 - 다음 API 시도: {endpoint}, 오류: {e}")
                 continue
         
         # 최후의 수단: 채널 ID를 채팅 채널 ID로 사용
@@ -128,33 +131,47 @@ class ChzzkChatClient:
             return False
     
     async def connect(self):
-        """웹소켓 연결"""
+        """웹소켓 연결 - Old version과 동일한 검증된 로직"""
+        logger.info("=== 채팅방 연결 시작 ===")
+        
         # 1단계: 채팅 채널 ID 획득
+        logger.info("1단계: 채팅 채널 ID 획득 중...")
         loop = asyncio.get_event_loop()
         if not await loop.run_in_executor(None, self.get_chat_channel_id_sync):
+            logger.error("❌ 채팅 채널 ID 획득 실패")
             return False
+        logger.info("✅ 채팅 채널 ID 획득 성공")
         
         # 2단계: 액세스 토큰 획득
+        logger.info("2단계: 액세스 토큰 획득 중...")
         if not await loop.run_in_executor(None, self.get_access_token_sync):
+            logger.error("❌ 액세스 토큰 획득 실패")
             return False
+        logger.info("✅ 액세스 토큰 획득 성공")
         
-        # 3단계: 웹소켓 연결 - 성공했던 간단한 로직
-        for endpoint in self.endpoints:
+        # 3단계: 웹소켓 연결
+        logger.info("3단계: 웹소켓 연결 시도 중...")
+        for i, endpoint in enumerate(self.endpoints, 1):
             try:
-                logger.info(f"웹소켓 연결 시도: {endpoint}")
+                logger.info(f"웹소켓 서버 {i}/{len(self.endpoints)} 연결 시도: {endpoint}")
                 headers = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                     "Origin": "https://chzzk.naver.com"
                 }
-                self.websocket = await websockets.connect(endpoint, additional_headers=headers)
+                self.websocket = await websockets.connect(endpoint, additional_headers=headers, timeout=10)
                 self.is_connected = True
-                logger.info(f"웹소켓 연결 성공: {endpoint}")
+                logger.info(f"✅ 웹소켓 연결 성공: {endpoint}")
+                logger.info("=== 채팅방 연결 완료 ===")
                 return True
             except Exception as e:
-                logger.warning(f"연결 실패 {endpoint}: {e}")
+                logger.warning(f"❌ 웹소켓 서버 {i} 연결 실패: {e}")
                 continue
         
-        logger.error("모든 웹소켓 연결 실패")
+        logger.error("❌ 모든 웹소켓 서버 연결 실패")
+        logger.error("💡 해결 방법:")
+        logger.error("   1. 네트워크 연결 확인")
+        logger.error("   2. 채널 ID가 올바른지 확인")
+        logger.error("   3. 방화벽 설정 확인")
         return False
     
     async def send_join_message(self):
@@ -197,7 +214,7 @@ class ChzzkChatClient:
                         data = json.loads(message)
                         await self.handle_message(data, message_callback)
                 except json.JSONDecodeError:
-                    logger.warning(f"JSON 파싱 실패: {message[:100]}...")
+                    logger.debug(f"JSON 파싱 실패: {message[:100]}...")
                 except Exception as e:
                     logger.error(f"메시지 처리 오류: {e}")
                     

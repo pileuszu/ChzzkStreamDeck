@@ -17,6 +17,10 @@ import sys
 import argparse
 from urllib.parse import urlparse, parse_qs
 from config import config_manager
+# 로깅 설정 (먼저 설정)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 from chat_client import ChzzkChatClient
 from spotify_api import SpotifyAPI, get_current_track_data
 
@@ -24,12 +28,12 @@ from spotify_api import SpotifyAPI, get_current_track_data
 try:
     import webview
     WEBVIEW_AVAILABLE = True
+    logger.info("✅ pywebview 라이브러리가 감지되었습니다 - 데스크톱 앱 모드 사용 가능")
 except ImportError:
     WEBVIEW_AVAILABLE = False
-
-# 로깅 설정
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+    logger.info("💡 pywebview 라이브러리가 없어 브라우저 모드로 실행됩니다.")
+    logger.info("   ✅ 이는 정상적인 동작이며, 모든 기능을 사용할 수 있습니다.")
+    logger.info("   🖥️  데스크톱 앱 모드를 원한다면: pip install pywebview")
 
 # 글로벌 채팅 메시지 저장소
 chat_messages = []
@@ -237,6 +241,100 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 
                 response = {"success": False, "message": f"잘못된 설정 데이터: {e}"}
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+        
+        elif parsed_path.path == '/api/config/export':
+            # 설정 내보내기 API
+            try:
+                import os
+                from datetime import datetime
+                
+                # 설정 데이터 파싱
+                config_data = json.loads(post_data)
+                
+                # 기본 파일명 생성
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"overlay_config_backup_{timestamp}.json"
+                
+                # 현재 디렉토리에 저장 (사용자가 쉽게 찾을 수 있도록)
+                file_path = os.path.join(os.getcwd(), filename)
+                
+                # 파일 저장
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(config_data, f, indent=2, ensure_ascii=False)
+                
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                
+                response = {"success": True, "message": "설정이 성공적으로 내보내졌습니다.", "filepath": file_path}
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                    
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                
+                response = {"success": False, "message": f"설정 내보내기 실패: {e}"}
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+        
+        elif parsed_path.path == '/api/config/import':
+            # 설정 가져오기 API
+            try:
+                import_data = json.loads(post_data)
+                
+                # 설정 데이터 검증
+                if 'config' in import_data:
+                    imported_config = import_data['config']
+                    
+                    # 기본 구조 검증
+                    required_keys = ['server', 'modules', 'ui']
+                    if all(key in imported_config for key in required_keys):
+                        # 설정 업데이트
+                        config_manager.config = imported_config
+                        success = config_manager.save_config()
+                        
+                        self.send_response(200 if success else 500)
+                        self.send_header('Content-type', 'application/json; charset=utf-8')
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        
+                        response = {"success": success, "message": "설정을 성공적으로 가져왔습니다." if success else "설정 저장에 실패했습니다."}
+                        self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                    else:
+                        self.send_response(400)
+                        self.send_header('Content-type', 'application/json; charset=utf-8')
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        
+                        response = {"success": False, "message": "잘못된 설정 파일 형식입니다."}
+                        self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                else:
+                    self.send_response(400)
+                    self.send_header('Content-type', 'application/json; charset=utf-8')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    
+                    response = {"success": False, "message": "설정 데이터가 없습니다."}
+                    self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                    
+            except json.JSONDecodeError:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                
+                response = {"success": False, "message": "잘못된 JSON 형식입니다."}
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                
+                response = {"success": False, "message": f"설정 가져오기 실패: {e}"}
                 self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
         
         elif parsed_path.path == '/api/modules/toggle':
