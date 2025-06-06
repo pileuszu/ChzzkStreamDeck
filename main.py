@@ -73,17 +73,28 @@ def validate_environment():
         if sys.version_info < (3, 8):
             raise RuntimeError(f"Python 3.8 이상이 필요합니다. 현재 버전: {sys.version}")
         
-        # 필수 파일 확인
-        required_files = [
-            'main/unified_server.py',
-            'main/config.py',
-            'main/chat_client.py',
-            'main/spotify_api.py'
-        ]
-        
-        for file_path in required_files:
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"필수 파일이 없습니다: {file_path}")
+        # 빌드된 실행 파일인지 확인
+        if getattr(sys, 'frozen', False):
+            # PyInstaller로 빌드된 경우, 파일 검증을 건너뛰고 모듈 import로 확인
+            logger.info("✅ 빌드된 실행 파일 - 모듈 import 검증 수행")
+            try:
+                import unified_server
+                import config
+                logger.info("✅ 핵심 모듈 import 성공")
+            except ImportError as e:
+                raise ImportError(f"빌드된 실행 파일에서 모듈 로딩 실패: {e}")
+        else:
+            # 개발 환경에서는 파일 존재 확인
+            required_files = [
+                'main/unified_server.py',
+                'main/config.py',
+                'main/chat_client.py',
+                'main/spotify_api.py'
+            ]
+            
+            for file_path in required_files:
+                if not os.path.exists(file_path):
+                    raise FileNotFoundError(f"필수 파일이 없습니다: {file_path}")
         
         logger.info("✅ 환경 검증 완료")
         

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChzzkStreamDeck 제어 패널</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .status {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .status.running {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4CAF50;
+        }
+        
+        .status.stopped {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            border: none;
+            border-radius: 10px;
+            padding: 15px 25px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn.primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+        
+        .btn.success {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+        }
+        
+        .btn.danger {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+        }
+        
+        .btn.info {
+            background: linear-gradient(45deg, #36d1dc, #5b86e5);
+        }
+        
+        .urls {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .url-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+        
+        .url-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .url-link {
+            color: #4ECDC4;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .url-link:hover {
+            text-decoration: underline;
+        }
+        
+        .logs {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid #4ECDC4;
+            padding-left: 10px;
+        }
+        
+        .log-entry.error {
+            border-left-color: #ff4b2b;
+            background: rgba(255, 75, 43, 0.1);
+        }
+        
+        .log-entry.success {
+            border-left-color: #56ab2f;
+            background: rgba(86, 171, 47, 0.1);
+        }
+        
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 ChzzkStreamDeck 제어 패널</h1>
+        
+        <div class="status" id="serverStatus">
+            <h2 id="statusText">🔍 서버 상태 확인 중...</h2>
+            <p id="statusDetail">잠시만 기다려주세요.</p>
+        </div>
+        
+        <div class="buttons">
+            <button class="btn primary" onclick="startServer()">
+                <span class="emoji">🚀</span>서버 시작
+            </button>
+            <button class="btn danger" onclick="stopServer()">
+                <span class="emoji">🛑</span>서버 종료
+            </button>
+            <button class="btn success" onclick="restartServer()">
+                <span class="emoji">🔄</span>서버 재시작
+            </button>
+            <button class="btn info" onclick="checkStatus()">
+                <span class="emoji">🔍</span>상태 확인
+            </button>
+        </div>
+        
+        <div class="urls">
+            <h3><span class="emoji">🔗</span>빠른 접속</h3>
+            <div class="url-item">
+                <span>관리패널</span>
+                <a href="http://localhost:8080/admin" target="_blank" class="url-link">http://localhost:8080/admin</a>
+            </div>
+            <div class="url-item">
+                <span>채팅 오버레이</span>
+                <a href="http://localhost:8080/chat/overlay" target="_blank" class="url-link">http://localhost:8080/chat/overlay</a>
+            </div>
+            <div class="url-item">
+                <span>Spotify 오버레이</span>
+                <a href="http://localhost:8080/spotify/overlay" target="_blank" class="url-link">http://localhost:8080/spotify/overlay</a>
+            </div>
+        </div>
+        
+        <div class="logs">
+            <h3><span class="emoji">📜</span>실시간 로그</h3>
+            <div id="logContainer">
+                <div class="log-entry">
+                    <span class="emoji">💡</span>웹 제어 패널이 시작되었습니다.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logCounter = 0;
+        
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const emoji = type === 'error' ? '❌' : type === 'success' ? '✅' : '💡';
+            
+            logEntry.innerHTML = `<span class="emoji">${emoji}</span>[${timestamp}] ${message}`;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // 로그가 너무 많아지면 오래된 것부터 제거
+            if (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+        
+        function updateStatus(isRunning, detail = '') {
+            const statusDiv = document.getElementById('serverStatus');
+            const statusText = document.getElementById('statusText');
+            const statusDetail = document.getElementById('statusDetail');
+            
+            if (isRunning) {
+                statusDiv.className = 'status running';
+                statusText.textContent = '✅ 서버 실행 중';
+                statusDetail.textContent = detail || 'ChzzkStreamDeck이 정상적으로 실행되고 있습니다.';
+            } else {
+                statusDiv.className = 'status stopped';
+                statusText.textContent = '❌ 서버 중지됨';
+                statusDetail.textContent = detail || 'ChzzkStreamDeck이 실행되지 않고 있습니다.';
+            }
+        }
+        
+        function startServer() {
+            addLog('서버 시작 방법을 안내합니다...', 'info');
+            addLog('1. start_app_cmd_optimized.bat 실행', 'info');
+            addLog('2. 또는 CMD에서: start /min ChzzkStreamDeck.exe --app', 'info');
+            
+            setTimeout(checkStatus, 3000);
+        }
+        
+        function stopServer() {
+            addLog('서버 종료 방법을 안내합니다...', 'info');
+            addLog('작업 관리자에서 ChzzkStreamDeck.exe 프로세스를 종료하세요', 'info');
+            
+            setTimeout(checkStatus, 2000);
+        }
+        
+        function restartServer() {
+            addLog('서버 재시작을 진행합니다...', 'info');
+            addLog('서버를 수동으로 종료한 후 다시 시작해주세요', 'info');
+        }
+        
+        function checkStatus() {
+            addLog('서버 상태를 확인합니다...', 'info');
+            
+            fetch('http://localhost:8080/admin')
+                .then(response => {
+                    if (response.ok) {
+                        updateStatus(true, '포트 8080에서 정상 응답 중');
+                        addLog('서버가 정상적으로 실행 중입니다.', 'success');
+                    } else {
+                        updateStatus(false, '서버 응답 오류');
+                        addLog('서버 응답에 문제가 있습니다.', 'error');
+                    }
+                })
+                .catch(error => {
+                    updateStatus(false, '서버에 연결할 수 없음');
+                    addLog('서버에 연결할 수 없습니다. 서버가 실행되지 않은 것 같습니다.', 'error');
+                });
+        }
+        
+        // 페이지 로드 시 상태 확인
+        window.onload = function() {
+            addLog('웹 제어 패널이 로드되었습니다.', 'success');
+            setTimeout(checkStatus, 1000);
+            
+            // 5초마다 자동으로 상태 확인
+            setInterval(checkStatus, 5000);
+        };
+    </script>
+</body>
+</html> 
