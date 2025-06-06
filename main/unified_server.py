@@ -1924,7 +1924,15 @@ def main():
     parser.add_argument('--app', action='store_true', help='데스크톱 앱 모드로 실행')
     parser.add_argument('--browser', action='store_true', help='브라우저 모드로 실행 (기본값)')
     parser.add_argument('--port', type=int, default=8080, help='서버 포트 번호 (기본값: 8080)')
+    parser.add_argument('--version', action='store_true', help='버전 정보 출력')
     args = parser.parse_args()
+    
+    # 버전 정보 출력 후 종료
+    if args.version:
+        print("ChzzkStreamDeck v2.0.0")
+        print("치지직 스트림덱 - 채팅 오버레이 & 관리 패널")
+        print("https://github.com/your-repo/ChzzkStreamDeck")
+        sys.exit(0)
     
     # 실행 파일인 경우 자동으로 앱 모드 활성화 (pywebview 포함된 경우에만)
     is_frozen = getattr(sys, 'frozen', False)

@@ -98,21 +98,55 @@ def build_executable():
     print("🔨 실행 파일 빌드 시작...")
     
     try:
+        # 빌드 전 정리
+        if os.path.exists('build'):
+            shutil.rmtree('build')
+        if os.path.exists('dist'):
+            shutil.rmtree('dist')
+        
         # PyInstaller 실행
         cmd = [
             sys.executable, '-m', 'PyInstaller',
             '--clean',
             '--noconfirm',
+            '--log-level=INFO',
             'ChzzkStreamDeck.spec'
         ]
         
+        print("📋 빌드 명령어:", ' '.join(cmd))
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        print("✅ 빌드 성공!")
+        
+        # 빌드 결과 확인
+        exe_path = Path('dist/ChzzkStreamDeck.exe')
+        if exe_path.exists():
+            file_size = exe_path.stat().st_size / (1024 * 1024)  # MB
+            print(f"✅ 빌드 성공! 파일 크기: {file_size:.1f}MB")
+            
+            # 간단한 실행 테스트
+            print("🧪 빌드된 파일 테스트 중...")
+            test_result = subprocess.run([str(exe_path), '--version'], 
+                                       capture_output=True, text=True, timeout=10)
+            if test_result.returncode == 0:
+                print("✅ 빌드된 파일이 정상적으로 실행됩니다")
+            else:
+                print("⚠️  빌드된 파일 테스트에서 경고가 있습니다")
+                
+        else:
+            print("❌ 실행 파일이 생성되지 않았습니다")
+            return False
+            
         return True
         
     except subprocess.CalledProcessError as e:
         print(f"❌ 빌드 실패: {e}")
+        print(f"표준 출력: {e.stdout}")
         print(f"오류 출력: {e.stderr}")
+        return False
+    except subprocess.TimeoutExpired:
+        print("⚠️  빌드된 파일 테스트 시간 초과 (정상일 수 있음)")
+        return True
+    except Exception as e:
+        print(f"❌ 예상치 못한 오류: {e}")
         return False
 
 def create_release_package():

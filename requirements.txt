@@ -24,11 +24,19 @@ logging-config>=1.0.0
 # 프로세스 관리
 psutil>=5.9.0
 
-# 빌드용 의존성 (추후 앱 빌드시 필요)
-# pyinstaller>=5.0.0
-# cx-freeze>=6.0.0
-# auto-py-to-exe>=2.0.0
+# 빌드용 의존성 (개발 환경에서만 필요)
+pyinstaller>=5.13.0
+auto-py-to-exe>=2.40.0
+
+# 추가 의존성 (빌드 시 필요)
+altgraph>=0.17.3
+pefile>=2023.2.7
+pywin32-ctypes>=0.2.0
 
 # 선택적 의존성
 # matplotlib>=3.7.0  # 그래프 생성이 필요한 경우
-# scipy>=1.10.0      # 고급 수학 연산이 필요한 경우 
+# scipy>=1.10.0      # 고급 수학 연산이 필요한 경우
+
+# 빌드 시 숨겨진 import 해결을 위한 의존성
+setuptools>=68.0.0
+wheel>=0.41.0 

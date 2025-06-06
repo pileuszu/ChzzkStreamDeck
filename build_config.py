@@ -21,13 +21,16 @@ class BuildConfig:
         
         # 동적으로 config 가져오기 (실행 시에만)
         try:
-            from config import AppConfig
-            config = AppConfig()
+            from config import ConfigManager
+            config = ConfigManager()
             self.current_port = config.get_server_port()
         except:
             # 빌드 시에는 기본값 사용
             self.current_port = self.default_port
-            
+        
+        # config 속성 초기화
+        self.config = self.get_build_config()
+        
     def get_build_config(self):
         """빌드용 설정 반환"""
         return {

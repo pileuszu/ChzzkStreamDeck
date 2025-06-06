@@ -156,8 +156,8 @@ def get_purple_compact_template():
         }
         
         @keyframes marquee {
-            0% { transform: translateX(120%); }
-            100% { transform: translateX(-120%); }
+            0% { transform: translateX(140%); }
+            100% { transform: translateX(-140%); }
         }
         
         /* 재생 중이 아닐 때 숨김 */
