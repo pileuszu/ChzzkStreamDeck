@@ -930,24 +930,31 @@ def get_neon_admin_template():
         
         async function exportConfig() {
             try {
-                const response = await fetch('/api/config/export', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(currentConfig)
-                });
+                // 파일명 생성
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+                const filename = `overlay_config_backup_${timestamp}.json`;
                 
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success) {
-                        showNotification(`설정이 ${result.filepath}에 저장되었습니다!`);
-                    } else {
-                        showNotification('설정 내보내기 실패: ' + result.message);
-                    }
-                } else {
-                    showNotification('설정 내보내기 요청 실패');
-                }
+                // 브라우저의 파일 다운로드 API 사용
+                const configData = JSON.stringify(currentConfig, null, 2);
+                const blob = new Blob([configData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                // 다운로드 링크 생성
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.style.display = 'none';
+                
+                // 링크 클릭하여 다운로드 시작
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // 메모리 정리
+                URL.revokeObjectURL(url);
+                
+                showNotification(`설정이 ${filename}으로 다운로드되었습니다!`);
+                
             } catch (error) {
                 console.error('설정 내보내기 실패:', error);
                 showNotification('설정 내보내기 실패');

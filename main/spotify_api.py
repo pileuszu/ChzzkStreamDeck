@@ -182,7 +182,6 @@ def is_authenticated():
     
     # 토큰이 없으면 인증되지 않음
     if not access_token:
-        logger.info("Spotify 토큰이 없습니다.")
         return False
     
     # 토큰이 만료되었으면 갱신 시도

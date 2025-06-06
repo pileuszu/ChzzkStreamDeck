@@ -158,7 +158,7 @@ class ChzzkChatClient:
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                     "Origin": "https://chzzk.naver.com"
                 }
-                self.websocket = await websockets.connect(endpoint, additional_headers=headers, timeout=10)
+                self.websocket = await websockets.connect(endpoint, additional_headers=headers)
                 self.is_connected = True
                 logger.info(f"✅ 웹소켓 연결 성공: {endpoint}")
                 logger.info("=== 채팅방 연결 완료 ===")

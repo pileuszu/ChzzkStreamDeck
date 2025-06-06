@@ -193,14 +193,8 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                         from spotify_api import is_authenticated
                         authenticated = is_authenticated()
                         module_status["authenticated"] = authenticated
-                        logger.info(f"Spotify 인증 상태 조회: {authenticated}")
-                        
-                        # 추가: 토큰 정보도 로그로 확인
-                        from spotify_api import access_token, token_expires_at
-                        logger.info(f"Spotify 토큰 존재: {access_token is not None}")
-                        if token_expires_at:
-                            from datetime import datetime
-                            logger.info(f"Spotify 토큰 만료: {token_expires_at}, 현재: {datetime.now()}")
+                        # 로그 출력 빈도 줄이기 - 디버그 레벨로 변경
+                        logger.debug(f"Spotify 인증 상태 조회: {authenticated}")
                         
                     except Exception as e:
                         logger.warning(f"Spotify 인증 상태 확인 실패: {e}")
@@ -241,43 +235,6 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 
                 response = {"success": False, "message": f"잘못된 설정 데이터: {e}"}
-                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
-        
-        elif parsed_path.path == '/api/config/export':
-            # 설정 내보내기 API
-            try:
-                import os
-                from datetime import datetime
-                
-                # 설정 데이터 파싱
-                config_data = json.loads(post_data)
-                
-                # 기본 파일명 생성
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"overlay_config_backup_{timestamp}.json"
-                
-                # 현재 디렉토리에 저장 (사용자가 쉽게 찾을 수 있도록)
-                file_path = os.path.join(os.getcwd(), filename)
-                
-                # 파일 저장
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    json.dump(config_data, f, indent=2, ensure_ascii=False)
-                
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                
-                response = {"success": True, "message": "설정이 성공적으로 내보내졌습니다.", "filepath": file_path}
-                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
-                    
-            except Exception as e:
-                self.send_response(500)
-                self.send_header('Content-type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                
-                response = {"success": False, "message": f"설정 내보내기 실패: {e}"}
                 self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
         
         elif parsed_path.path == '/api/config/import':
@@ -511,10 +468,7 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
                 result = server_manager._start_chat_service()
                 if not result:
                     logger.error("💬 채팅 모듈 시작 실패!")
-                    logger.error("📋 체크리스트:")
-                    logger.error("   ✅ 채팅 모듈이 활성화되어 있나요?")
-                    logger.error("   ✅ 치지직 채널 ID가 설정되어 있나요?")
-                    logger.error("   ✅ 해당 채널이 현재 방송 중인가요?")
+                    logger.error("💡 채널 ID가 설정되어 있는지 확인하세요.")
                 return result
             elif module_name == 'spotify':
                 return server_manager._start_spotify_service()
@@ -1269,37 +1223,34 @@ class UnifiedServerManager:
             return False
     
     def _start_chat_service(self):
-        """채팅 서비스 시작 (내부 메서드)"""
-        logger.info("채팅 서비스 시작 요청됨")
+        """채팅 서비스 시작 (Old version과 동일한 방식)"""
+        logger.info("💬 채팅 서비스 시작 요청됨")
         
-        # 모듈 활성화 상태 확인
-        if not config_manager.is_module_enabled('chat'):
-            logger.warning("채팅 모듈이 비활성화되어 있습니다. 관리패널에서 활성화하세요.")
-            return False
+        # 시작 버튼을 누르면 모듈을 활성화
+        config_manager.set("modules.chat.enabled", True)
+        logger.info("채팅 모듈이 활성화되었습니다.")
         
         try:
-            # 채널 ID 확인
             channel_id = config_manager.get("modules.chat.channel_id")
-            logger.info(f"설정된 채널 ID: {channel_id}")
-            
-            if not channel_id or channel_id.strip() == "":
-                logger.error("❌ 채팅 채널 ID가 설정되지 않았습니다!")
-                logger.error("🔧 해결 방법:")
-                logger.error("   1. 관리패널 → 채팅 모듈 설정")
-                logger.error("   2. 치지직 채널 ID 입력")
-                logger.error("   3. 설정 저장 후 모듈 시작")
+            if not channel_id:
+                logger.warning("채팅 채널 ID가 설정되지 않았습니다.")
                 return False
+            
+            logger.info(f"설정된 채널 ID: {channel_id}")
             
             # 기존 채팅 서비스 정리
             if self.chat_task:
                 self.chat_task.cancel()
                 logger.info("기존 채팅 서비스 정리됨")
             
-            # 새 채팅 클라이언트 시작
-            loop = asyncio.new_event_loop()
+            # 새 채팅 클라이언트 시작 (Old version과 동일한 방식)
             def run_chat():
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(self._run_chat_client(channel_id))
+                try:
+                    # 새 이벤트 루프에서 실행
+                    import asyncio
+                    asyncio.run(self._run_chat_client_simple(channel_id))
+                except Exception as e:
+                    logger.error(f"채팅 클라이언트 스레드 오류: {e}")
             
             chat_thread = threading.Thread(target=run_chat, daemon=True)
             chat_thread.start()
@@ -1365,10 +1316,44 @@ class UnifiedServerManager:
         services_running['chat'] = False
         logger.info("채팅 서비스 종료됨")
     
+    async def _run_chat_client_simple(self, channel_id):
+        """Old version과 동일한 방식의 간단한 채팅 클라이언트 실행"""
+        logger.info("=== Old Version 방식 채팅 클라이언트 시작 ===")
+        
+        try:
+            def filtered_message_callback(message_data):
+                """필터링된 메시지 콜백"""
+                # 빈 메시지나 익명 샘플 데이터 필터링
+                if (message_data and 
+                    message_data.get('message', '').strip() and  # 빈 메시지 제외
+                    message_data.get('nickname', '').strip() and  # 빈 닉네임 제외
+                    message_data.get('nickname') != '익명'):  # 익명 메시지 제외
+                    add_chat_message(message_data)
+            
+            # 채팅 클라이언트 생성 (Old version과 동일)
+            client = ChzzkChatClient(channel_id)
+            
+            # 연결 시도
+            if await client.connect():
+                logger.info("✅ 채팅방 연결 성공! 메시지 수신 시작...")
+                await client.send_join_message()
+                # Old version과 동일한 방식으로 메시지 수신
+                await client.listen_messages(message_callback=filtered_message_callback)
+            else:
+                logger.error("❌ 채팅방 연결 실패")
+                services_running['chat'] = False
+                
+        except Exception as e:
+            logger.error(f"채팅 클라이언트 실행 오류: {e}")
+            services_running['chat'] = False
+        finally:
+            logger.info("채팅 클라이언트 종료됨")
+    
     def _start_spotify_service(self):
         """스포티파이 서비스 시작 (내부 메서드)"""
-        if not config_manager.is_module_enabled('spotify'):
-            return False
+        # 시작 버튼을 누르면 모듈을 활성화
+        config_manager.set("modules.spotify.enabled", True)
+        logger.info("스포티파이 모듈이 활성화되었습니다.")
         
         try:
             # 기존 스포티파이 서비스 정리
@@ -1506,14 +1491,19 @@ def main():
     parser.add_argument('--port', type=int, default=8080, help='서버 포트 번호 (기본값: 8080)')
     args = parser.parse_args()
     
-    # 실행 파일인 경우 자동으로 앱 모드 활성화 (강제)
+    # 실행 파일인 경우 자동으로 앱 모드 활성화 (pywebview 포함된 경우에만)
     is_frozen = getattr(sys, 'frozen', False)
     is_exe = sys.executable.endswith('.exe') and 'python' not in sys.executable.lower()
     
     if is_frozen or is_exe:
-        APP_MODE = True  # 실행 파일에서는 무조건 앱 모드
-        print(f"🚀 실행 파일 감지 - 강제 앱 모드 활성화 (frozen={is_frozen}, exe={is_exe})")
+        # 실행 파일에서는 pywebview가 있으면 앱 모드, 없으면 브라우저 모드
+        APP_MODE = WEBVIEW_AVAILABLE
+        print(f"🚀 실행 파일 감지 (frozen={is_frozen}, exe={is_exe})")
         print(f"📁 실행 경로: {sys.executable}")
+        if WEBVIEW_AVAILABLE:
+            print("✅ pywebview 포함됨 - 데스크톱 앱 모드 활성화")
+        else:
+            print("⚠️ pywebview 미포함 - 브라우저 모드로 실행")
     else:
         APP_MODE = args.app
         print(f"🐍 개발 모드 - 선택적 앱 모드 (app={APP_MODE})")
@@ -1525,8 +1515,12 @@ def main():
         print("📱 데스크톱 앱 모드")
     else:
         print("🌐 브라우저 모드")
-        if APP_MODE and not WEBVIEW_AVAILABLE:
-            print("💡 webview 라이브러리가 없어 브라우저 모드로 실행됩니다.")
+        if (is_frozen or is_exe) and not WEBVIEW_AVAILABLE:
+            print("💡 이 실행 파일은 pywebview가 포함되지 않은 경량 버전입니다.")
+            print("   ✅ 브라우저에서 동일한 기능을 모두 사용할 수 있습니다.")
+            print("   🖥️  데스크톱 앱 버전을 원한다면 Full 버전을 다운로드하세요.")
+        elif APP_MODE and not WEBVIEW_AVAILABLE:
+            print("💡 pywebview 라이브러리가 없어 브라우저 모드로 실행됩니다.")
             print("   ✅ 이는 정상적인 동작이며, 모든 기능을 사용할 수 있습니다.")
             print("   🖥️  데스크톱 앱 모드를 원한다면: pip install pywebview")
     
