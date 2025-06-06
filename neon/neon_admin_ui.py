@@ -582,7 +582,7 @@ def get_neon_admin_template():
                             <option value="default">기본 네온 테마</option>
                             <option value="purple">퍼플 테마</option>
                             <option value="purple_compact">퍼플 컴팩트</option>
-                            <option value="purple_space">퍼플 스페이스 🚀👨‍🚀</option>
+                            
                         </select>
                     </div>
                     <div class="url-container">

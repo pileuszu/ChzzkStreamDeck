@@ -732,28 +732,7 @@ class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 logger.error(f"Purple 컴팩트 테마 로드 중 오류: {e}")
         
-        elif current_theme == "purple_space":
-            # Purple Space 테마 사용 (우주인 컨셉)
-            import sys
-            import os
-            # purple 폴더를 Python 경로에 추가
-            purple_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'purple')
-            if purple_dir not in sys.path:
-                sys.path.insert(0, purple_dir)
-            
-            try:
-                # 이미 import된 모듈이 있다면 reload
-                if 'purple_space_spotify_overlay' in sys.modules:
-                    import importlib
-                    importlib.reload(sys.modules['purple_space_spotify_overlay'])
-                    
-                from purple_space_spotify_overlay import get_purple_space_template
-                logger.info("Purple Space 테마가 성공적으로 로드되었습니다.")
-                return get_purple_space_template()
-            except ImportError as e:
-                logger.warning(f"Purple Space 테마를 불러올 수 없습니다: {e}. 기본 테마를 사용합니다.")
-            except Exception as e:
-                logger.error(f"Purple Space 테마 로드 중 오류: {e}")
+
         
         elif current_theme in ["default", "neon"]:
             # Neon 테마 사용
