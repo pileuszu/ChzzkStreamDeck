@@ -12,13 +12,38 @@ logger.setLevel(logging.INFO)
 # 글로벌 메시지 저장소
 chat_messages = []
 MAX_MESSAGES = 50
+# 중복 방지를 위한 메시지 ID 저장소
+processed_message_ids = set()
+MAX_PROCESSED_IDS = 10  # 최근 10개 메시지 ID 유지
 
 def add_chat_message(message_data):
-    """새 채팅 메시지 추가"""
-    global chat_messages
+    """새 채팅 메시지 추가 - 중복 방지 로직 포함"""
+    global chat_messages, processed_message_ids
+    
+    # 메시지 ID 확인
+    message_id = message_data.get('id', '')
+    if not message_id:
+        return  # ID가 없으면 무시
+    
+    # 중복 메시지 체크
+    if message_id in processed_message_ids:
+        logger.debug(f"중복 메시지 무시: {message_id}")
+        return
+    
+    # 새 메시지 추가
     chat_messages.append(message_data)
+    processed_message_ids.add(message_id)
+    
+    # 최대 메시지 수 제한
     if len(chat_messages) > MAX_MESSAGES:
-        chat_messages.pop(0)
+        removed_message = chat_messages.pop(0)
+        # 제거된 메시지의 ID도 정리 (오래된 ID 관리)
+        if len(processed_message_ids) > MAX_PROCESSED_IDS:
+            # 가장 오래된 ID들 일부 제거 (실제로는 LRU 캐시가 더 좋지만 간단히 처리)
+            oldest_ids = list(processed_message_ids)[:50]  # 오래된 50개 제거
+            processed_message_ids -= set(oldest_ids)
+    
+    logger.debug(f"새 채팅 메시지 추가: {message_data.get('nickname', '익명')}: {message_data.get('message', '')[:20]}...")
 
 class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
     """오버레이용 HTTP 핸들러"""

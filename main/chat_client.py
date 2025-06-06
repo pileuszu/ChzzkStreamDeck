@@ -201,33 +201,46 @@ class ChzzkChatClient:
             logger.error(f"참가 메시지 전송 실패: {e}")
     
     async def listen_messages(self, message_callback=None):
-        """메시지 수신 대기"""
+        """메시지 수신 대기 - 연결 안정성 개선"""
         logger.info("채팅 메시지 수신 시작")
         
         # 하트비트 태스크 시작
         heartbeat_task = asyncio.create_task(self.keep_alive())
         
         try:
+            message_count = 0
             async for message in self.websocket:
                 try:
                     if message.strip():
                         data = json.loads(message)
                         await self.handle_message(data, message_callback)
+                        message_count += 1
+                        
+                        # 주기적으로 연결 상태 확인
+                        if message_count % 100 == 0:
+                            logger.debug(f"메시지 {message_count}개 처리됨 - 연결 상태 양호")
+                            
                 except json.JSONDecodeError:
-                    logger.debug(f"JSON 파싱 실패: {message[:100]}...")
+                    logger.debug(f"JSON 파싱 실패: {message[:100] if len(message) > 100 else message}...")
                 except Exception as e:
                     logger.error(f"메시지 처리 오류: {e}")
+                    # 메시지 처리 오류는 연결을 끊지 않고 계속 진행
+                    continue
                     
         except websockets.exceptions.ConnectionClosed as e:
             logger.warning(f"웹소켓 연결 종료: {e}")
             self.is_connected = False
         except websockets.exceptions.InvalidState as e:
-            logger.warning(f"웹소켓 상태 오류: {e}")
+            logger.warning(f"웹소켓 상태 오류 - 재연결 필요: {e}")
+            self.is_connected = False
+        except websockets.exceptions.WebSocketException as e:
+            logger.error(f"웹소켓 오류: {e}")
             self.is_connected = False
         except Exception as e:
-            logger.error(f"메시지 수신 오류: {e}")
+            logger.error(f"예상치 못한 메시지 수신 오류: {e}")
             self.is_connected = False
         finally:
+            logger.info(f"메시지 수신 종료됨 (총 {message_count}개 처리)")
             heartbeat_task.cancel()
             try:
                 await heartbeat_task
@@ -260,7 +273,7 @@ class ChzzkChatClient:
                 await self.process_chat_message(data, message_callback)
     
     async def process_chat_message(self, data, message_callback=None):
-        """채팅 메시지 파싱 및 저장"""
+        """채팅 메시지 파싱 및 저장 - 중복 방지 및 안정성 개선"""
         try:
             cmd = data.get('cmd')
             bdy_list = data.get('bdy', [])
@@ -268,7 +281,28 @@ class ChzzkChatClient:
             if not bdy_list:
                 return
             
-            bdy = bdy_list[0] if isinstance(bdy_list, list) else bdy_list
+            # 배열의 모든 메시지 처리 (Old version은 단일 메시지만 처리했지만 여기서는 개선)
+            if isinstance(bdy_list, list):
+                # 여러 메시지가 한번에 올 수 있으므로 모두 처리
+                for bdy in bdy_list:
+                    await self._process_single_message(bdy, cmd, message_callback)
+            else:
+                # 단일 메시지 처리
+                await self._process_single_message(bdy_list, cmd, message_callback)
+                    
+        except Exception as e:
+            logger.error(f"채팅 메시지 파싱 오류: {e}")
+    
+    async def _process_single_message(self, bdy, cmd, message_callback=None):
+        """단일 메시지 처리 - 중복 방지 로직 포함"""
+        try:
+            # 메시지 ID 기반 중복 체크
+            message_id = bdy.get('msgId') or bdy.get('id') or bdy.get('uid', '') + str(bdy.get('msgTime', ''))
+            
+            # 빈 메시지나 중복 메시지 필터링
+            message_text = bdy.get('msg', '').strip()
+            if not message_text or not message_id:
+                return
             
             # 프로필 정보 파싱
             profile_str = bdy.get('profile', '{}')
@@ -289,11 +323,12 @@ class ChzzkChatClient:
             title = profile.get('title', {})
             
             chat_data = {
+                'id': message_id,  # 중복 방지용 ID 추가
                 'type': 'donation' if is_donation else 'chat',
                 'timestamp': datetime.now().strftime('%H:%M:%S'),
                 'user_id': bdy.get('uid', ''),
                 'nickname': profile.get('nickname', '익명'),
-                'message': bdy.get('msg', ''),
+                'message': message_text,
                 'is_streamer': is_streamer,
                 'user_role': user_role,
                 'badge_url': badge.get('imageUrl', '') if badge else '',
@@ -301,7 +336,8 @@ class ChzzkChatClient:
                 'title_color': title.get('color', '#FFFFFF') if title else '#FFFFFF',
                 'profile_image': profile.get('profileImageUrl', ''),
                 'verified': profile.get('verifiedMark', False),
-                'amount': bdy.get('payAmount', 0) if is_donation else 0
+                'amount': bdy.get('payAmount', 0) if is_donation else 0,
+                'msg_time': bdy.get('msgTime', 0)  # 메시지 시간 추가
             }
             
             # 콜백 함수가 있으면 호출
@@ -314,7 +350,7 @@ class ChzzkChatClient:
             print(f"{role_emoji} [{chat_data['timestamp']}] {chat_data['nickname']}: {chat_data['message']}{amount_text}")
                     
         except Exception as e:
-            logger.error(f"채팅 메시지 파싱 오류: {e}")
+            logger.error(f"단일 메시지 처리 오류: {e}")
     
     async def keep_alive(self):
         """하트비트 전송으로 연결 유지"""

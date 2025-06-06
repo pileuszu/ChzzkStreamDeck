@@ -195,5 +195,4 @@ def is_authenticated():
             logger.warning("Spotify 토큰 갱신 실패!")
             return False
     
-    logger.info("Spotify 인증 상태: 유효함")
     return True 
