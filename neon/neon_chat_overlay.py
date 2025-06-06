@@ -586,7 +586,7 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
         /* 스트리머용 왼쪽 상단 별 */
         .chat_box.naver.chat.streamer::before {
-            content: '⭐';
+            content: '';
             position: absolute;
             top: -8px;
             left: -8px;

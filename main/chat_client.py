@@ -294,45 +294,33 @@ class ChzzkChatClient:
             logger.error(f"채팅 메시지 파싱 오류: {e}")
     
     async def _process_single_message(self, bdy, cmd, message_callback=None):
-        """단일 메시지 처리 - 중복 방지 로직 포함"""
+        """단일 메시지 처리 - Old version과 동일한 간단한 방식"""
         try:
-            # 빈 메시지 먼저 체크
+            # 빈 메시지 체크 (Old version과 동일)
             message_text = bdy.get('msg', '').strip()
             if not message_text:
                 return
             
-            # 안정적인 메시지 ID 생성 (중복 체크용)
-            user_id = bdy.get('uid', 'unknown')
-            msg_time = bdy.get('msgTime', 0)
-            # 메시지 내용의 해시값도 포함하여 더 안정적인 ID 생성
-            message_hash = str(hash(message_text + user_id))
-            message_id = f"{user_id}_{msg_time}_{message_hash}"
-            
-            if not message_id:
-                # 최후의 수단으로 타임스탬프 기반 ID 생성
-                import time
-                message_id = f"msg_{int(time.time() * 1000)}"
-            
-            # 프로필 정보 파싱
+            # 프로필 정보 파싱 (Old version과 동일)
             profile_str = bdy.get('profile', '{}')
             try:
                 profile = json.loads(profile_str) if isinstance(profile_str, str) else profile_str
             except json.JSONDecodeError:
                 profile = {}
             
-            # 사용자 역할 확인
+            # 사용자 역할 확인 (Old version과 동일)
             user_role = profile.get('userRoleCode', 'common_user')
             is_streamer = (user_role == 'streamer')
             
-            # 후원 메시지 확인 (추정)
+            # 후원 메시지 확인 (Old version과 동일)
             is_donation = cmd == 93102 or bdy.get('payAmount', 0) > 0
             
-            # 배지 및 제목 정보
+            # 배지 및 제목 정보 (Old version과 동일)
             badge = profile.get('badge', {})
             title = profile.get('title', {})
             
+            # Old version과 동일한 데이터 구조
             chat_data = {
-                'id': message_id,  # 중복 방지용 ID 추가
                 'type': 'donation' if is_donation else 'chat',
                 'timestamp': datetime.now().strftime('%H:%M:%S'),
                 'user_id': bdy.get('uid', ''),
@@ -345,15 +333,14 @@ class ChzzkChatClient:
                 'title_color': title.get('color', '#FFFFFF') if title else '#FFFFFF',
                 'profile_image': profile.get('profileImageUrl', ''),
                 'verified': profile.get('verifiedMark', False),
-                'amount': bdy.get('payAmount', 0) if is_donation else 0,
-                'msg_time': bdy.get('msgTime', 0)  # 메시지 시간 추가
+                'amount': bdy.get('payAmount', 0) if is_donation else 0
             }
             
-            # 콜백 함수가 있으면 호출
+            # 콜백 함수가 있으면 호출 (Old version과 동일)
             if message_callback:
                 message_callback(chat_data)
             
-            # 콘솔 출력
+            # 콘솔 출력 (Old version과 동일)
             role_emoji = "👑" if is_streamer else ("💰" if is_donation else "💬")
             amount_text = f" ({chat_data['amount']}원)" if is_donation else ""
             print(f"{role_emoji} [{chat_data['timestamp']}] {chat_data['nickname']}: {chat_data['message']}{amount_text}")

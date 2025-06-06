@@ -9,50 +9,31 @@ logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s -
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# 글로벌 메시지 저장소
+# 글로벌 메시지 저장소 (Old version과 동일)
 chat_messages = []
 MAX_MESSAGES = 50
-# 중복 방지를 위한 메시지 ID 저장소
-processed_message_ids = set()
-MAX_PROCESSED_IDS = 100  # 최근 100개 메시지 ID 유지 (10개는 너무 작음)
 
 def add_chat_message(message_data):
-    """새 채팅 메시지 추가 - 중복 방지 로직 포함"""
-    global chat_messages, processed_message_ids
+    """새 채팅 메시지 추가 - Old version과 동일한 간단한 방식"""
+    global chat_messages
     
-    # 메시지 ID 확인
-    message_id = message_data.get('id', '')
-    if not message_id:
-        return  # ID가 없으면 무시
-    
-    # 중복 메시지 체크 (더 엄격하게)
-    if message_id in processed_message_ids:
-        logger.debug(f"중복 메시지 무시: {message_id}")
+    # 기본 검증만 수행 (Old version과 동일)
+    if not message_data or not message_data.get('message', '').strip():
         return
     
-    # 추가 중복 체크: 최근 메시지와 내용이 동일한지 확인
-    current_message = message_data.get('message', '')
-    current_nickname = message_data.get('nickname', '')
+    # 간단한 중복 체크: 마지막 메시지와만 비교 (Old version 방식)
+    if (chat_messages and 
+        chat_messages[-1].get('message') == message_data.get('message') and
+        chat_messages[-1].get('nickname') == message_data.get('nickname')):
+        logger.debug(f"중복 메시지 무시: {message_data.get('nickname')}")
+        return
     
-    # 최근 3개 메시지와 비교
-    for recent_msg in chat_messages[-3:]:
-        if (recent_msg.get('message') == current_message and 
-            recent_msg.get('nickname') == current_nickname):
-            logger.debug(f"내용 중복 메시지 무시: {current_nickname}: {current_message[:20]}...")
-            return
-    
-    # 새 메시지 추가
+    # 메시지 추가 (Old version과 동일)
     chat_messages.append(message_data)
-    processed_message_ids.add(message_id)
     
-    # 최대 메시지 수 제한
+    # 최대 메시지 수 제한 (Old version과 동일)
     if len(chat_messages) > MAX_MESSAGES:
-        removed_message = chat_messages.pop(0)
-        # 제거된 메시지의 ID도 정리 (오래된 ID 관리)
-        if len(processed_message_ids) > MAX_PROCESSED_IDS:
-            # 가장 오래된 ID들 일부 제거
-            oldest_ids = list(processed_message_ids)[:30]  # 오래된 30개 제거
-            processed_message_ids -= set(oldest_ids)
+        chat_messages.pop(0)
     
     logger.debug(f"✅ 새 채팅: {message_data.get('nickname', '익명')}: {message_data.get('message', '')[:25]}...")
 
@@ -275,7 +256,7 @@ class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
         /* 스트리머용 왼쪽 상단 별 */
         .chat_box.naver.chat.streamer::before {
-            content: '⭐';
+            content: '';
             position: absolute;
             top: -8px;
             left: -8px;
