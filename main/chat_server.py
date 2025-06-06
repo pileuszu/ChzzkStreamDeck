@@ -14,7 +14,7 @@ chat_messages = []
 MAX_MESSAGES = 50
 # 중복 방지를 위한 메시지 ID 저장소
 processed_message_ids = set()
-MAX_PROCESSED_IDS = 10  # 최근 10개 메시지 ID 유지
+MAX_PROCESSED_IDS = 100  # 최근 100개 메시지 ID 유지 (10개는 너무 작음)
 
 def add_chat_message(message_data):
     """새 채팅 메시지 추가 - 중복 방지 로직 포함"""
@@ -25,10 +25,21 @@ def add_chat_message(message_data):
     if not message_id:
         return  # ID가 없으면 무시
     
-    # 중복 메시지 체크
+    # 중복 메시지 체크 (더 엄격하게)
     if message_id in processed_message_ids:
         logger.debug(f"중복 메시지 무시: {message_id}")
         return
+    
+    # 추가 중복 체크: 최근 메시지와 내용이 동일한지 확인
+    current_message = message_data.get('message', '')
+    current_nickname = message_data.get('nickname', '')
+    
+    # 최근 3개 메시지와 비교
+    for recent_msg in chat_messages[-3:]:
+        if (recent_msg.get('message') == current_message and 
+            recent_msg.get('nickname') == current_nickname):
+            logger.debug(f"내용 중복 메시지 무시: {current_nickname}: {current_message[:20]}...")
+            return
     
     # 새 메시지 추가
     chat_messages.append(message_data)
@@ -39,11 +50,11 @@ def add_chat_message(message_data):
         removed_message = chat_messages.pop(0)
         # 제거된 메시지의 ID도 정리 (오래된 ID 관리)
         if len(processed_message_ids) > MAX_PROCESSED_IDS:
-            # 가장 오래된 ID들 일부 제거 (실제로는 LRU 캐시가 더 좋지만 간단히 처리)
-            oldest_ids = list(processed_message_ids)[:50]  # 오래된 50개 제거
+            # 가장 오래된 ID들 일부 제거
+            oldest_ids = list(processed_message_ids)[:30]  # 오래된 30개 제거
             processed_message_ids -= set(oldest_ids)
     
-    logger.debug(f"새 채팅 메시지 추가: {message_data.get('nickname', '익명')}: {message_data.get('message', '')[:20]}...")
+    logger.debug(f"✅ 새 채팅: {message_data.get('nickname', '익명')}: {message_data.get('message', '')[:25]}...")
 
 class OverlayHTTPHandler(http.server.SimpleHTTPRequestHandler):
     """오버레이용 HTTP 핸들러"""

@@ -296,13 +296,22 @@ class ChzzkChatClient:
     async def _process_single_message(self, bdy, cmd, message_callback=None):
         """단일 메시지 처리 - 중복 방지 로직 포함"""
         try:
-            # 메시지 ID 기반 중복 체크
-            message_id = bdy.get('msgId') or bdy.get('id') or bdy.get('uid', '') + str(bdy.get('msgTime', ''))
-            
-            # 빈 메시지나 중복 메시지 필터링
+            # 빈 메시지 먼저 체크
             message_text = bdy.get('msg', '').strip()
-            if not message_text or not message_id:
+            if not message_text:
                 return
+            
+            # 안정적인 메시지 ID 생성 (중복 체크용)
+            user_id = bdy.get('uid', 'unknown')
+            msg_time = bdy.get('msgTime', 0)
+            # 메시지 내용의 해시값도 포함하여 더 안정적인 ID 생성
+            message_hash = str(hash(message_text + user_id))
+            message_id = f"{user_id}_{msg_time}_{message_hash}"
+            
+            if not message_id:
+                # 최후의 수단으로 타임스탬프 기반 ID 생성
+                import time
+                message_id = f"msg_{int(time.time() * 1000)}"
             
             # 프로필 정보 파싱
             profile_str = bdy.get('profile', '{}')

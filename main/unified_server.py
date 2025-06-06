@@ -40,7 +40,7 @@ chat_messages = []
 MAX_MESSAGES = 50
 # 중복 방지를 위한 메시지 ID 저장소
 processed_message_ids = set()
-MAX_PROCESSED_IDS = 10  # 최근 10개 메시지 ID 유지
+MAX_PROCESSED_IDS = 100  # 최근 100개 메시지 ID 유지 (10개는 너무 작음)
 
 # 글로벌 서비스 상태
 services_running = {
@@ -60,10 +60,21 @@ def add_chat_message(message_data):
     if not message_id:
         return  # ID가 없으면 무시
     
-    # 중복 메시지 체크
+    # 중복 메시지 체크 (더 엄격하게)
     if message_id in processed_message_ids:
         logger.debug(f"중복 메시지 무시: {message_id}")
         return
+    
+    # 추가 중복 체크: 최근 메시지와 내용이 동일한지 확인
+    current_message = message_data.get('message', '')
+    current_nickname = message_data.get('nickname', '')
+    
+    # 최근 3개 메시지와 비교
+    for recent_msg in chat_messages[-3:]:
+        if (recent_msg.get('message') == current_message and 
+            recent_msg.get('nickname') == current_nickname):
+            logger.debug(f"내용 중복 메시지 무시: {current_nickname}: {current_message[:20]}...")
+            return
     
     # 새 메시지 추가
     chat_messages.append(message_data)
@@ -74,11 +85,11 @@ def add_chat_message(message_data):
         removed_message = chat_messages.pop(0)
         # 제거된 메시지의 ID도 정리 (오래된 ID 관리)
         if len(processed_message_ids) > MAX_PROCESSED_IDS:
-            # 가장 오래된 ID들 일부 제거 (실제로는 LRU 캐시가 더 좋지만 간단히 처리)
-            oldest_ids = list(processed_message_ids)[:50]  # 오래된 50개 제거
+            # 가장 오래된 ID들 일부 제거
+            oldest_ids = list(processed_message_ids)[:30]  # 오래된 30개 제거
             processed_message_ids -= set(oldest_ids)
     
-    logger.debug(f"새 채팅 메시지 추가: {message_data.get('nickname', '익명')}: {message_data.get('message', '')[:20]}...")
+    logger.debug(f"✅ 새 채팅: {message_data.get('nickname', '익명')}: {message_data.get('message', '')[:25]}...")
 
 class UnifiedServerHandler(http.server.SimpleHTTPRequestHandler):
     """통합 서버 HTTP 핸들러"""
@@ -1346,75 +1357,146 @@ class UnifiedServerManager:
         logger.info("채팅 서비스 종료됨")
     
     async def _run_chat_client_simple(self, channel_id):
-        """Old version과 동일한 방식의 간단한 채팅 클라이언트 실행"""
-        logger.info("=== Old Version 방식 채팅 클라이언트 시작 ===")
+        """스포티파이와 충돌하지 않는 안정화된 채팅 클라이언트"""
+        logger.info("=== 안정화된 채팅 클라이언트 시작 ===")
+        
+        # 스포티파이와 충돌 방지를 위한 약간의 지연
+        await asyncio.sleep(0.8)
         
         try:
             def filtered_message_callback(message_data):
-                """필터링된 메시지 콜백 - 추가 검증 포함"""
-                # 더 엄격한 필터링 조건
-                if (message_data and 
-                    message_data.get('message', '').strip() and  # 빈 메시지 제외
-                    message_data.get('nickname', '').strip() and  # 빈 닉네임 제외
-                    message_data.get('nickname') != '익명' and  # 익명 메시지 제외
-                    message_data.get('id')):  # ID가 있는 메시지만 처리
-                    add_chat_message(message_data)
-                    logger.debug(f"채팅 메시지 처리됨: {message_data.get('nickname')}")
-                else:
-                    logger.debug(f"메시지 필터링됨: nickname={message_data.get('nickname')}, message={message_data.get('message', '')[:20]}, id={message_data.get('id')}")
+                """필터링된 메시지 콜백 - 스레드 안전 보장"""
+                try:
+                    # 더 엄격한 필터링 조건
+                    if (message_data and 
+                        isinstance(message_data, dict) and  # dict 타입 확인
+                        message_data.get('message', '').strip() and  # 빈 메시지 제외
+                        message_data.get('nickname', '').strip() and  # 빈 닉네임 제외
+                        message_data.get('nickname') != '익명' and  # 익명 메시지 제외
+                        message_data.get('id')):  # ID가 있는 메시지만 처리
+                        
+                        # 스레드 안전하게 메시지 추가
+                        add_chat_message(message_data)
+                        logger.debug(f"💬 {message_data.get('nickname')}: {message_data.get('message', '')[:25]}...")
+                    else:
+                        logger.debug(f"메시지 필터링됨: {message_data}")
+                except Exception as cb_error:
+                    logger.error(f"메시지 콜백 오류: {cb_error}")
             
-            # 채팅 클라이언트 생성 (Old version과 동일)
+            # 채팅 클라이언트 생성
+            logger.info("📱 채팅 클라이언트 생성 중...")
             client = ChzzkChatClient(channel_id)
             
-            # 연결 시도
-            if await client.connect():
-                logger.info("✅ 채팅방 연결 성공! 메시지 수신 시작...")
-                await client.send_join_message()
-                # Old version과 동일한 방식으로 메시지 수신
-                await client.listen_messages(message_callback=filtered_message_callback)
-            else:
-                logger.error("❌ 채팅방 연결 실패")
-                services_running['chat'] = False
+            # 재연결 루프 (안정성 향상)
+            retry_count = 0
+            max_retries = 3
+            
+            while retry_count < max_retries and services_running.get('chat', False):
+                try:
+                    # 연결 시도
+                    if await client.connect():
+                        logger.info("✅ 채팅방 연결 성공! 메시지 수신 시작...")
+                        await client.send_join_message()
+                        
+                        # 메시지 수신 (스포티파이와 격리됨)
+                        while services_running.get('chat', False):
+                            try:
+                                await client.listen_messages(message_callback=filtered_message_callback)
+                                # listen_messages가 종료되면 서비스가 정지된 것임
+                                if services_running.get('chat', False):
+                                    logger.warning("⚠️ 메시지 수신 중단됨, 재연결 시도...")
+                                    break
+                            except Exception as listen_error:
+                                logger.error(f"메시지 수신 오류: {listen_error}")
+                                if services_running.get('chat', False):
+                                    await asyncio.sleep(3)
+                                    break
+                                else:
+                                    return
+                        
+                        # 정상 종료인 경우 재시도 안함
+                        if not services_running.get('chat', False):
+                            break
+                            
+                        # 재연결 시도
+                        retry_count += 1
+                        if retry_count < max_retries:
+                            logger.info(f"🔄 재연결 시도 ({retry_count}/{max_retries})")
+                            await asyncio.sleep(5)
+                    else:
+                        logger.error(f"❌ 채팅방 연결 실패 ({retry_count + 1}/{max_retries})")
+                        retry_count += 1
+                        if retry_count < max_retries:
+                            await asyncio.sleep(5)
+                        
+                except Exception as connect_error:
+                    logger.error(f"연결 시도 중 오류: {connect_error}")
+                    retry_count += 1
+                    if retry_count < max_retries and services_running.get('chat', False):
+                        await asyncio.sleep(5)
                 
         except Exception as e:
             logger.error(f"채팅 클라이언트 실행 오류: {e}")
-            services_running['chat'] = False
         finally:
-            logger.info("채팅 클라이언트 종료됨")
+            logger.info("💬 채팅 클라이언트 종료됨")
+            services_running['chat'] = False
+            
+            # 정리 작업
+            try:
+                await client.disconnect()
+            except:
+                pass
     
     def _start_spotify_service(self):
-        """스포티파이 서비스 시작 (내부 메서드)"""
+        """스포티파이 서비스 시작 (내부 메서드) - 채팅 모듈과 격리"""
         # 시작 버튼을 누르면 모듈을 활성화
         config_manager.set("modules.spotify.enabled", True)
-        logger.info("스포티파이 모듈이 활성화되었습니다.")
+        logger.info("🎵 스포티파이 모듈이 활성화되었습니다.")
         
         try:
             # 기존 스포티파이 서비스 정리
-            if self.spotify_update_thread:
-                # 스레드는 데몬이므로 자동으로 정리됨
-                pass
+            if hasattr(self, 'spotify_update_thread') and self.spotify_update_thread:
+                services_running['spotify'] = False
+                time.sleep(0.5)  # 기존 스레드가 종료될 시간 제공
             
-            # 새 스포티파이 업데이트 스레드 시작
+            # 새 스포티파이 업데이트 스레드 시작 (채팅과 완전히 격리)
             def update_spotify_data():
+                """스포티파이 데이터 업데이트 - 별도 스레드에서 실행"""
+                logger.info("🎵 스포티파이 데이터 업데이트 스레드 시작")
                 spotify_api = SpotifyAPI()
-                while services_running['spotify']:
+                error_count = 0
+                
+                while services_running.get('spotify', False):
                     try:
                         if config_manager.is_module_enabled('spotify'):
-                            spotify_api.get_current_track()
-                        time.sleep(5)
+                            # 스포티파이 API 호출을 try-catch로 보호
+                            track_data = spotify_api.get_current_track()
+                            if track_data:
+                                logger.debug("🎵 스포티파이 트랙 정보 업데이트됨")
+                                error_count = 0  # 성공 시 에러 카운트 리셋
+                            time.sleep(3)  # 3초로 간격 단축 (더 반응적)
+                        else:
+                            time.sleep(5)  # 비활성화 상태에서는 5초 대기
                     except Exception as e:
-                        logger.error(f"스포티파이 데이터 업데이트 오류: {e}")
-                        time.sleep(10)
+                        error_count += 1
+                        logger.debug(f"스포티파이 데이터 업데이트 오류 ({error_count}): {e}")
+                        # 에러가 연속으로 발생하면 대기 시간 증가
+                        sleep_time = min(10 + error_count * 2, 30)
+                        time.sleep(sleep_time)
+                
+                logger.info("🎵 스포티파이 데이터 업데이트 스레드 종료")
             
+            # 스포티파이 서비스 시작
             services_running['spotify'] = True
-            self.spotify_update_thread = threading.Thread(target=update_spotify_data, daemon=True)
+            self.spotify_update_thread = threading.Thread(target=update_spotify_data, daemon=True, name="SpotifyUpdateThread")
             self.spotify_update_thread.start()
             
-            logger.info("🎵 스포티파이 서비스 시작됨")
+            logger.info("🎵 스포티파이 서비스 시작됨 (채팅 모듈과 격리됨)")
             return True
             
         except Exception as e:
             logger.error(f"스포티파이 서비스 시작 실패: {e}")
+            services_running['spotify'] = False
             return False
     
     def start_all_services(self):
