@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS 위젯 대시보드</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1><i class="fas fa-th"></i> OBS 위젯 대시보드</h1>
+            <p class="subtitle">각 모듈을 클릭하여 활성화/비활성화할 수 있습니다</p>
+        </header>
+
+        <div class="modules-grid">
+            <!-- Spotify 모듈 -->
+            <div class="module-card" id="spotify-module">
+                <div class="module-header">
+                    <div class="module-icon">
+                        <i class="fab fa-spotify"></i>
+                    </div>
+                    <div class="module-info">
+                        <h3>Spotify 재생 중</h3>
+                        <p>현재 재생 중인 노래 표시</p>
+                    </div>
+                    <div class="module-controls">
+                        <button class="settings-btn" onclick="openSettings('spotify')">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <label class="switch">
+                            <input type="checkbox" id="spotify-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="module-preview" id="spotify-preview">
+                    <div class="spotify-widget theme-simple-purple">
+                        <div class="album-cover">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <div class="song-info">
+                            <div class="song-title">노래 제목</div>
+                            <div class="song-artist">아티스트</div>
+                            <div class="progress-bar">
+                                <div class="progress"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="module-status">
+                        <span class="status-indicator"></span>
+                        <span class="port-info">포트: <span id="spotify-port">8001</span></span>
+                    </div>
+                    <div class="browser-source-section">
+                        <h4>브라우저 소스 주소</h4>
+                        <div class="url-copy-container">
+                            <input type="text" id="spotify-url" readonly value="http://localhost:8001/spotify">
+                            <button class="copy-btn" onclick="copyToClipboard('spotify-url')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 채팅 모듈 -->
+            <div class="module-card" id="chat-module">
+                <div class="module-header">
+                    <div class="module-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="module-info">
+                        <h3>실시간 채팅</h3>
+                        <p>스트리밍 채팅 표시</p>
+                    </div>
+                    <div class="module-controls">
+                        <button class="settings-btn" onclick="openSettings('chat')">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <label class="switch">
+                            <input type="checkbox" id="chat-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="module-preview" id="chat-preview">
+                    <div class="chat-widget theme-simple-purple">
+                        <div class="chat-message">
+                            <span class="username">사용자1:</span>
+                            <span class="message">안녕하세요!</span>
+                        </div>
+                        <div class="chat-message">
+                            <span class="username">사용자2:</span>
+                            <span class="message">반갑습니다~</span>
+                        </div>
+                        <div class="chat-message">
+                            <span class="username">사용자3:</span>
+                            <span class="message">오늘도 화이팅!</span>
+                        </div>
+                    </div>
+                    <div class="module-status">
+                        <span class="status-indicator"></span>
+                        <span class="port-info">포트: <span id="chat-port">8002</span></span>
+                    </div>
+                    <div class="browser-source-section">
+                        <h4>브라우저 소스 주소</h4>
+                        <div class="url-copy-container">
+                            <input type="text" id="chat-url" readonly value="http://localhost:8002/chat">
+                            <button class="copy-btn" onclick="copyToClipboard('chat-url')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">모듈 설정</h2>
+                <button class="close-btn" onclick="closeSettings()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Spotify 설정 -->
+                <div id="spotify-settings" class="settings-panel">
+                    <div class="settings-section">
+                        <h3>네트워크 설정</h3>
+                        <div class="setting-item">
+                            <label for="spotify-port-input">포트 번호</label>
+                            <input type="number" id="spotify-port-input" min="1000" max="65535" value="8001">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Spotify API 설정</h3>
+                        <div class="setting-item">
+                            <label for="spotify-client-id">Client ID</label>
+                            <input type="text" id="spotify-client-id" placeholder="Spotify Client ID 입력">
+                        </div>
+                        <div class="setting-item">
+                            <label for="spotify-client-secret">Client Secret</label>
+                            <input type="password" id="spotify-client-secret" placeholder="Spotify Client Secret 입력">
+                        </div>
+                        <div class="setting-item">
+                            <small>Spotify Developer Dashboard에서 앱을 생성하여 Client ID와 Client Secret을 받아야 합니다.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>테마 설정</h3>
+                        <div class="theme-selector">
+                            <div class="theme-option" data-theme="simple-purple">
+                                <input type="radio" name="spotify-theme" id="theme-simple-purple" value="simple-purple" checked>
+                                <label for="theme-simple-purple">
+                                    <div class="theme-preview simple-purple-preview">
+                                        <div class="mini-album"></div>
+                                        <div class="mini-info">
+                                            <div class="mini-title"></div>
+                                            <div class="mini-artist"></div>
+                                            <div class="mini-progress"></div>
+                                        </div>
+                                    </div>
+                                    <span class="theme-name">Simple Purple</span>
+                                </label>
+                            </div>
+                            
+                            <div class="theme-option" data-theme="neon-green">
+                                <input type="radio" name="spotify-theme" id="theme-neon-green" value="neon-green">
+                                <label for="theme-neon-green">
+                                    <div class="theme-preview neon-green-preview">
+                                        <div class="mini-album"></div>
+                                        <div class="mini-info">
+                                            <div class="mini-title"></div>
+                                            <div class="mini-artist"></div>
+                                            <div class="mini-progress"></div>
+                                        </div>
+                                    </div>
+                                    <span class="theme-name">Neon Green</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 채팅 설정 -->
+                <div id="chat-settings" class="settings-panel" style="display: none;">
+                    <div class="settings-section">
+                        <h3>네트워크 설정</h3>
+                        <div class="setting-item">
+                            <label for="chat-port-input">포트 번호</label>
+                            <input type="number" id="chat-port-input" min="1000" max="65535" value="8002">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>채널 설정</h3>
+                        <div class="setting-item">
+                            <label for="chat-channel-id">Channel ID</label>
+                            <input type="text" id="chat-channel-id" placeholder="채널 ID 입력">
+                        </div>
+                        <div class="setting-item">
+                            <label for="chat-platform">플랫폼</label>
+                            <select id="chat-platform">
+                                <option value="chzzk">치지직</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>테마 설정</h3>
+                        <div class="theme-selector">
+                            <div class="theme-option" data-theme="simple-purple">
+                                <input type="radio" name="chat-theme" id="chat-theme-simple-purple" value="simple-purple" checked>
+                                <label for="chat-theme-simple-purple">
+                                    <div class="theme-preview simple-purple-preview chat-preview">
+                                        <div class="mini-chat-messages">
+                                            <div class="mini-chat-message"></div>
+                                            <div class="mini-chat-message"></div>
+                                            <div class="mini-chat-message"></div>
+                                        </div>
+                                    </div>
+                                    <span class="theme-name">Simple Purple</span>
+                                </label>
+                            </div>
+                            
+                            <div class="theme-option" data-theme="neon-green">
+                                <input type="radio" name="chat-theme" id="chat-theme-neon-green" value="neon-green">
+                                <label for="chat-theme-neon-green">
+                                    <div class="theme-preview neon-green-preview chat-preview">
+                                        <div class="mini-chat-messages">
+                                            <div class="mini-chat-message"></div>
+                                            <div class="mini-chat-message"></div>
+                                            <div class="mini-chat-message"></div>
+                                        </div>
+                                    </div>
+                                    <span class="theme-name">Neon Green</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>채팅 설정</h3>
+                        <div class="setting-item">
+                            <label for="chat-max-messages">최대 메시지 수</label>
+                            <input type="number" id="chat-max-messages" min="5" max="50" value="10">
+                        </div>
+                        <div class="setting-item">
+                            <label for="chat-alignment">채팅 정렬</label>
+                            <select id="chat-alignment">
+                                <option value="default">기본 (스트리머 오른쪽, 시청자 왼쪽)</option>
+                                <option value="right">오른쪽 정렬</option>
+                                <option value="left">왼쪽 정렬</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="chat-fade-time">메시지 사라지는 시간 (초)
+                                <i class="fas fa-info-circle info-icon" data-tooltip="0으로 설정하면 사라지지 않습니다"></i>
+                            </label>
+                            <input type="number" id="chat-fade-time" min="0" max="60" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSettings()">취소</button>
+                <button class="btn btn-primary" onclick="saveSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html> 
