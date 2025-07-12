@@ -15,6 +15,15 @@ class SettingsManager {
                 maxMessages: 10,
                 alignment: 'default',
                 fadeTime: 0
+            },
+            musicbot: {
+                enabled: true,
+                commands: {
+                    addSong: '!노래추가',
+                    skipSong: '!건너뛰기',
+                    currentSong: '!현재곡',
+                    queue: '!대기열'
+                }
             }
         };
     }
@@ -57,9 +66,11 @@ class SettingsManager {
     
     // UI 업데이트
     updateUI() {
-        // 브라우저 소스 URL 업데이트
+        // 브라우저 소스 URL 업데이트 (서버 기반)
         document.getElementById('spotify-url').value = `http://localhost:7112/spotify-widget.html`;
         document.getElementById('chat-url').value = `http://localhost:7112/chat-overlay.html`;
+        
+        console.log('🔗 브라우저 소스 URL이 서버 기반으로 업데이트되었습니다.');
     }
     
     // 모달에서 설정 로드
@@ -79,6 +90,13 @@ class SettingsManager {
             document.getElementById('chat-alignment').value = settings.alignment;
             document.getElementById('chat-fade-time').value = settings.fadeTime;
             document.getElementById('chat-theme-select').value = settings.theme;
+            
+        } else if (moduleName === 'musicbot') {
+            document.getElementById('musicbot-enabled').value = settings.enabled.toString();
+            document.getElementById('musicbot-cmd-add').value = settings.commands.addSong;
+            document.getElementById('musicbot-cmd-skip').value = settings.commands.skipSong;
+            document.getElementById('musicbot-cmd-current').value = settings.commands.currentSong;
+            document.getElementById('musicbot-cmd-queue').value = settings.commands.queue;
         }
     }
     
@@ -100,6 +118,16 @@ class SettingsManager {
             localStorage.setItem('spotify-redirect-uri', newSettings.redirectUri);
             localStorage.setItem('spotify-theme', newSettings.theme);
             
+            // Client ID나 Secret이 변경된 경우 기존 토큰 삭제
+            const currentSettings = this.getModuleSettings('spotify');
+            if (currentSettings.clientId !== newSettings.clientId || 
+                currentSettings.clientSecret !== newSettings.clientSecret) {
+                console.log('🔄 Client ID/Secret 변경됨 - 기존 토큰 삭제');
+                localStorage.removeItem('spotify-access-token');
+                localStorage.removeItem('spotify-refresh-token');
+                localStorage.removeItem('spotify-token-expiry');
+            }
+            
         } else if (moduleName === 'chat') {
             const newSettings = {
                 theme: document.getElementById('chat-theme-select').value,
@@ -119,6 +147,19 @@ class SettingsManager {
             localStorage.setItem('chat-alignment', newSettings.alignment);
             localStorage.setItem('chat-platform', newSettings.platform);
             localStorage.setItem('chat-channel-id', newSettings.channelId);
+            
+        } else if (moduleName === 'musicbot') {
+            const newSettings = {
+                enabled: document.getElementById('musicbot-enabled').value === 'true',
+                commands: {
+                    addSong: document.getElementById('musicbot-cmd-add').value,
+                    skipSong: document.getElementById('musicbot-cmd-skip').value,
+                    currentSong: document.getElementById('musicbot-cmd-current').value,
+                    queue: document.getElementById('musicbot-cmd-queue').value
+                }
+            };
+            
+            this.updateModuleSettings('musicbot', newSettings);
         }
         
         this.updateUI();

@@ -1,170 +1,253 @@
-# 🔧 치지직 API 문제 해결 가이드
+# Troubleshooting Guide
 
-## ❌ "앱 업데이트 후 정상 시청 가능합니다" 오류 해결
+## Common Issues and Solutions
 
-### 1. 📋 문제 확인
+### Chat Module Issues
+
+#### "App update required for normal viewing" Error
+**Cause**: Stream is not live or incorrect channel ID
+**Solution**:
+1. Verify the channel is currently live streaming
+2. Check the channel ID is exactly 32 characters (alphanumeric)
+3. Test with a different active channel ID
+
+#### Chat messages not appearing
+**Cause**: Server connection issues or API limitations
+**Solution**:
+1. Check server status at `http://localhost:7112/api/status`
+2. Verify browser console for errors
+3. Confirm firewall settings allow port 7112
+4. Restart server and try again
+
+#### WebSocket connection fails
+**Cause**: Network issues or server overload
+**Solution**:
+1. Test with different channel ID
+2. Disable VPN if active
+3. Check network connectivity to CHZZK servers
+4. Restart server after 5-10 minutes
+
+#### Chat overlay not updating in OBS
+**Cause**: OBS browser source configuration
+**Solution**:
+1. Verify URL is correct: `http://localhost:7112/chat-overlay.html`
+2. Check "Refresh browser when scene becomes active" is disabled
+3. Ensure "Shutdown source when not visible" is disabled
+4. Add CSS: `body { background: transparent !important; }`
+
+### Spotify Module Issues
+
+#### Authentication fails
+**Cause**: Incorrect client credentials or callback URL
+**Solution**:
+1. Verify Client ID and Client Secret from Spotify Developer Dashboard
+2. Ensure redirect URI is set to `http://localhost:7112/spotify/callback`
+3. Check popup blocker is disabled
+4. Clear browser cache and cookies
+
+#### "Invalid redirect URI" error
+**Cause**: Mismatch between configured and actual redirect URI
+**Solution**:
+1. In Spotify Developer Dashboard, go to your app settings
+2. Add `http://localhost:7112/spotify/callback` to redirect URIs
+3. Save settings and retry authentication
+
+#### Token expires frequently
+**Cause**: Server-side token refresh issues
+**Solution**:
+1. Check Client Secret is correctly configured
+2. Verify refresh token is being saved
+3. Check server logs for refresh token errors
+4. Re-authenticate if refresh token is invalid
+
+#### Spotify widget not showing in OBS
+**Cause**: Authentication not shared between dashboard and widget
+**Solution**:
+1. Authenticate in main dashboard first
+2. Wait for "Token saved to server" confirmation
+3. Add OBS browser source: `http://localhost:7112/spotify-widget.html`
+4. Check server logs for token sharing issues
+
+### Music Bot Issues
+
+#### Commands not responding
+**Cause**: Prerequisites not met or module not active
+**Solution**:
+1. Ensure Chat Module is active and connected
+2. Verify Spotify Module is authenticated
+3. Check Music Bot is enabled in dashboard
+4. Confirm both modules show "Active" status
+
+#### Queue management fails (403 error)
+**Cause**: Spotify Premium required or no active device
+**Solution**:
+1. Upgrade to Spotify Premium account
+2. Open Spotify app and start playing music
+3. Verify device appears as active in Spotify
+4. Check Spotify app has queue management permissions
+
+#### "No active device" error
+**Cause**: Spotify app not running or no music playing
+**Solution**:
+1. Open Spotify desktop app or mobile app
+2. Start playing any song
+3. Verify device appears in Spotify Connect
+4. Ensure device is not set to private session
+
+#### Search returns no results
+**Cause**: Network issues or search query problems
+**Solution**:
+1. Check internet connection
+2. Try simpler search terms
+3. Verify Spotify API access token is valid
+4. Check server logs for API response errors
+
+### Server Issues
+
+#### "EADDRINUSE" error on startup
+**Cause**: Port 7112 already in use
+**Solution**:
+1. Check if another instance is running:
+   ```bash
+   netstat -ano | findstr :7112
+   ```
+2. Kill existing process:
+   ```bash
+   taskkill /F /PID <process_id>
+   ```
+3. Restart server
+
+#### "Cannot GET /api/endpoint" errors
+**Cause**: Route ordering or server initialization issues
+**Solution**:
+1. Ensure server is fully started before accessing APIs
+2. Check server logs for initialization errors
+3. Verify all required dependencies are installed
+4. Restart server completely
+
+#### SSE connection drops frequently
+**Cause**: Network instability or server resource issues
+**Solution**:
+1. Check server resource usage (CPU, memory)
+2. Verify network stability
+3. Increase server timeout settings if needed
+4. Check for firewall interference
+
+### General Troubleshooting
+
+#### Server won't start
+**Cause**: Missing dependencies or port conflicts
+**Solution**:
+1. Install dependencies: `npm install`
+2. Check Node.js version (14.0.0 or higher)
+3. Verify port 7112 is available
+4. Check for permission issues
+
+#### Settings not persisting
+**Cause**: localStorage issues or browser restrictions
+**Solution**:
+1. Enable localStorage in browser settings
+2. Disable private/incognito mode
+3. Clear browser cache and reload
+4. Check browser console for storage errors
+
+#### OBS browser source shows blank page
+**Cause**: URL incorrect or server not running
+**Solution**:
+1. Verify server is running at `http://localhost:7112`
+2. Test URL in regular browser first
+3. Check OBS browser source settings
+4. Ensure no typos in URL
+
+## Testing and Debugging
+
+### Manual Testing
+
+#### Test Chat Module
 ```bash
-# API 테스트 실행
-npm run api-test [채널ID]
+# Test chat client directly
+node src/chat-client.js <CHANNEL_ID>
 
-# 예시
-npm run api-test 9ae7d38b629b78f48e49fb3106218ff5
+# Test with verbose logging
+node src/chat-client.js <CHANNEL_ID> --verbose
 ```
 
-### 2. 🔍 단계별 해결 방법
-
-#### 방법 1: 다른 채널 ID 시도
+#### Test Server APIs
 ```bash
-# 현재 라이브 중인 다른 채널 ID 사용
-npm run chat-test [다른채널ID]
+# Check server status
+curl http://localhost:7112/api/status
+
+# Test Spotify token
+curl http://localhost:7112/api/spotify/token
+
+# Test chat stream
+curl http://localhost:7112/api/chat/stream
 ```
 
-#### 방법 2: 브라우저에서 채널 ID 재확인
-1. 치지직 웹사이트에서 라이브 방송 중인 채널 접속
-2. URL에서 정확한 32자리 채널 ID 복사
-3. 복사한 ID로 재시도
+### Debug Mode
 
-#### 방법 3: 네트워크 설정 확인
+#### Enable Debug Logging
+Set environment variable for detailed logs:
 ```bash
-# DNS 설정 확인
-nslookup api.chzzk.naver.com
+# Windows
+set DEBUG=*
+node server.js
 
-# 네트워크 연결 테스트
-ping api.chzzk.naver.com
+# Linux/Mac
+DEBUG=* node server.js
 ```
 
-### 3. 🛠️ 고급 해결 방법
+#### Browser Console Debugging
+1. Open browser developer tools (F12)
+2. Check Console tab for errors
+3. Monitor Network tab for failed requests
+4. Check Application tab for localStorage issues
 
-#### 방법 A: 프록시 사용
-```bash
-# 필요시 프록시 서버를 통해 접속
-# (프록시 설정은 환경에 따라 다름)
-```
+### Log Files
 
-#### 방법 B: VPN 사용
-```bash
-# 지역 제한이 있는 경우 VPN을 통해 접속
-```
+#### Server Logs
+- Monitor server console output
+- Check for connection errors
+- Verify API response codes
+- Watch for authentication failures
 
-#### 방법 C: 쿠키 시뮬레이션
-```javascript
-// 브라우저 쿠키를 시뮬레이션하는 방법
-// (고급 사용자용)
-```
+#### Browser Logs
+- Check browser console for JavaScript errors
+- Monitor network requests and responses
+- Verify localStorage data persistence
+- Check for CORS or permission issues
 
-### 4. 📊 성공적인 테스트 사례
+## Network Requirements
 
-#### 성공 패턴 1: 모바일 User-Agent
-```
-User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15
-```
+### Firewall Settings
+- Allow inbound connections on port 7112
+- Allow outbound connections to:
+  - `api.chzzk.naver.com` (CHZZK API)
+  - `accounts.spotify.com` (Spotify Auth)
+  - `api.spotify.com` (Spotify API)
 
-#### 성공 패턴 2: 완전한 브라우저 헤더
-```
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
-Accept: application/json, text/plain, */*
-Referer: https://chzzk.naver.com/
-```
+### Proxy Configuration
+If using a proxy server:
+1. Configure proxy settings in your system
+2. Ensure proxy allows WebSocket connections
+3. Check proxy doesn't block required domains
 
-### 5. 🎯 테스트 시나리오
+## Getting Help
 
-#### 시나리오 1: 기본 테스트
-```bash
-# 1. API 테스트 실행
-npm run api-test
+### Information to Include
+When reporting issues, include:
+- Server logs and error messages
+- Browser console logs
+- System information (OS, Node.js version)
+- Steps to reproduce the issue
+- Expected vs actual behavior
 
-# 2. 결과 확인
-# ✅ 성공시: 채팅 테스트 진행
-# ❌ 실패시: 다른 채널 ID 시도
-```
+### Common Solutions Summary
+1. **Server issues**: Restart server, check port conflicts
+2. **Auth issues**: Verify credentials, clear cache
+3. **Chat issues**: Check channel ID, verify stream is live
+4. **Spotify issues**: Ensure Premium account, active device
+5. **Music bot issues**: Verify both modules are active
+6. **OBS issues**: Check URL, browser source settings
 
-#### 시나리오 2: 문제 해결 테스트
-```bash
-# 1. 다른 채널 ID로 테스트
-npm run api-test [다른채널ID]
-
-# 2. 여러 채널 ID 시도
-npm run api-test 9ae7d38b629b78f48e49fb3106218ff5
-npm run api-test [다른채널ID1]
-npm run api-test [다른채널ID2]
-```
-
-### 6. 🔄 대안 방법
-
-#### 대안 1: 웹 브라우저 테스트
-```bash
-# 웹 브라우저에서 직접 테스트
-# test/chzzk-chat-test.html 파일 열기
-```
-
-#### 대안 2: 다른 API 엔드포인트
-```bash
-# 다른 API 엔드포인트 시도
-# - service/v1/channels/
-# - polling/v1/channels/
-# - polling/v2/channels/
-```
-
-### 7. 📝 문제 리포팅
-
-#### 성공 사례 공유
-```
-✅ 성공한 설정:
-- 채널 ID: [성공한채널ID]
-- 시도 방법: [방법번호]
-- 환경: [OS/네트워크환경]
-```
-
-#### 실패 사례 공유
-```
-❌ 실패한 설정:
-- 채널 ID: [실패한채널ID]
-- 오류 메시지: [정확한오류메시지]
-- 시도한 방법: [시도한방법들]
-```
-
-### 8. 🆘 최종 해결책
-
-#### 해결책 1: 시간 차이를 두고 재시도
-```bash
-# 5-10분 후 재시도
-# 치지직 API 서버 상태가 변경될 수 있음
-```
-
-#### 해결책 2: 다른 네트워크 환경
-```bash
-# 모바일 핫스팟 사용
-# 다른 인터넷 연결 시도
-```
-
-#### 해결책 3: 브라우저 개발자 도구 활용
-```bash
-# 1. 실제 브라우저에서 치지직 접속
-# 2. F12 개발자 도구 열기
-# 3. Network 탭에서 실제 요청 헤더 확인
-# 4. 동일한 헤더로 스크립트 수정
-```
-
----
-
-## 💡 추가 팁
-
-### 채널 ID 찾기
-1. 치지직 메인 페이지에서 "라이브" 섹션 확인
-2. 현재 방송 중인 채널 클릭
-3. URL에서 32자리 ID 복사
-
-### 성공률 높이는 방법
-- 인기 있는 대형 채널 ID 사용
-- 확실히 라이브 방송 중인 채널 선택
-- 피크 시간대 (저녁 7-11시) 테스트
-
-### 실시간 디버깅
-```bash
-# 상세 로그 확인
-DEBUG=* npm run chat-test [채널ID]
-```
-
----
-
-💡 **중요**: 치지직 API는 공식 API가 아니므로 언제든 변경될 수 있습니다. 지속적인 업데이트와 테스트가 필요합니다. 
+For persistent issues, check the project repository for updates and known issues. 

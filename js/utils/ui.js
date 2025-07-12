@@ -28,10 +28,21 @@ class UIManager {
         
         // 해당 모듈의 설정 패널 표시
         document.getElementById(`${moduleName}-settings`).style.display = 'block';
-        document.getElementById('modal-title').textContent = `${moduleName === 'spotify' ? 'Spotify' : '채팅'} 모듈 설정`;
+        
+        let title = '모듈 설정';
+        if (moduleName === 'spotify') title = 'Spotify 모듈 설정';
+        else if (moduleName === 'chat') title = '채팅 모듈 설정';
+        else if (moduleName === 'musicbot') title = '음악봇 모듈 설정';
+        
+        document.getElementById('modal-title').textContent = title;
         
         // 현재 설정 값 로드
         this.app.settingsManager.loadModalSettings(moduleName);
+        
+        // 음악봇 모듈인 경우 상태 업데이트
+        if (moduleName === 'musicbot') {
+            this.updateMusicBotStatus();
+        }
     }
     
     // 설정 모달 닫기
@@ -51,8 +62,16 @@ class UIManager {
         this.applyTheme(this.currentModule, this.app.settingsManager.getModuleSettings(this.currentModule).theme);
         
         // 모듈이 실행 중이면 재시작
-        const module = this.currentModule === 'spotify' ? this.app.spotifyModule : this.app.chatModule;
-        if (module.isActive) {
+        let module = null;
+        if (this.currentModule === 'spotify') {
+            module = this.app.spotifyModule;
+        } else if (this.currentModule === 'chat') {
+            module = this.app.chatModule;
+        } else if (this.currentModule === 'musicbot') {
+            module = this.app.musicBotModule;
+        }
+        
+        if (module && module.isActive) {
             module.restart();
         }
         
@@ -135,6 +154,108 @@ class UIManager {
     
     // 성공 메시지 표시
     showSuccess(message) {
-// 성공 메시지 (로그 제거)
+        // 성공 메시지 (로그 제거)
+    }
+    
+    // 정보 메시지 표시
+    showInfo(message) {
+        console.log(message);
+        
+        // 멀티라인 메시지를 처리하기 위해 개행 문자를 <br>로 변환
+        const formattedMessage = message.replace(/\n/g, '<br>');
+        
+        // 간단한 모달 다이얼로그로 표시
+        const infoModal = document.createElement('div');
+        infoModal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+        
+        infoModal.innerHTML = `
+            <div style="
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 500px;
+                max-height: 400px;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            ">
+                <h3 style="margin-top: 0; color: #333;">📋 정보</h3>
+                <pre style="
+                    white-space: pre-wrap;
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    line-height: 1.4;
+                    color: #666;
+                    margin: 15px 0;
+                    background: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                    overflow-x: auto;
+                ">${message}</pre>
+                <button style="
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    float: right;
+                " onclick="this.parentElement.parentElement.remove()">
+                    확인
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(infoModal);
+        
+        // 배경 클릭 시 닫기
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) {
+                infoModal.remove();
+            }
+        });
+        
+        // 5초 후 자동 닫기
+        setTimeout(() => {
+            if (infoModal.parentElement) {
+                infoModal.remove();
+            }
+        }, 10000);
+    }
+    
+    // 음악봇 상태 업데이트
+    updateMusicBotStatus() {
+        const chatStatus = document.getElementById('musicbot-status-chat');
+        const spotifyStatus = document.getElementById('musicbot-status-spotify');
+        
+        if (chatStatus) {
+            if (this.app.chatModule && this.app.chatModule.isActive) {
+                chatStatus.textContent = '활성화';
+                chatStatus.className = 'status-value active';
+            } else {
+                chatStatus.textContent = '비활성화';
+                chatStatus.className = 'status-value';
+            }
+        }
+        
+        if (spotifyStatus) {
+            if (this.app.spotifyModule && this.app.spotifyModule.isActive) {
+                spotifyStatus.textContent = '활성화';
+                spotifyStatus.className = 'status-value active';
+            } else {
+                spotifyStatus.textContent = '비활성화';
+                spotifyStatus.className = 'status-value';
+            }
+        }
     }
 } 

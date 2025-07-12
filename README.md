@@ -1,211 +1,257 @@
-# 🎮 ChzzkStreamDeck v2.0
+# ChzzkStreamDeck v2.0
 
-**CHZZK (치지직) 스트리밍 위젯 시스템**
+**CHZZK Streaming Widget System**
 
-OBS Studio에서 사용할 수 있는 실시간 채팅 오버레이 시스템입니다.
+A comprehensive streaming widget system for OBS Studio with real-time chat overlay, Spotify integration, and music bot functionality.
 
-## ✨ 주요 기능
+## Features
 
-- 🎨 **다중 테마 지원**: 마법같은 Simple Purple, 사이버펑크 Neon Green
-- 💬 **실시간 채팅**: CHZZK WebSocket 연결
-- 😀 **이모티콘 지원**: CHZZK 이모티콘 실시간 표시
-- 📡 **Server-Sent Events**: 실시간 데이터 스트리밍
-- 🎛️ **웹 컨트롤 패널**: 브라우저에서 설정 관리
-- 🎥 **방송 최적화**: 깔끔한 오버레이 인터페이스
-- ✨ **고급 애니메이션**: 부드러운 입장/퇴장 효과
-- 🔧 **모듈화된 구조**: 깔끔한 코드 아키텍처
+### Core Modules
+- **Chat Module**: Real-time CHZZK chat integration with WebSocket connection
+- **Spotify Module**: Music information display and playback control
+- **Music Bot**: Chat command-based Spotify control system
+- **Server-based Token Management**: Centralized token sharing between dashboard and OBS browser sources
 
-## 🚀 빠른 시작
+### Chat System
+- Real-time chat overlay with SSE (Server-Sent Events)
+- CHZZK emoticon support
+- Customizable message display duration
+- Multiple alignment options (left, center, right)
+- Automatic message cleanup and fade effects
+- Theme support (Simple Purple, Neon Green)
 
-### 1. 의존성 설치
+### Spotify Integration
+- OAuth 2.0 Authorization Code Flow authentication
+- Current track information display
+- Playback control (play/pause, next, previous)
+- Queue management through chat commands
+- Server-based token storage for OBS compatibility
+
+### Music Bot Commands
+- `!노래추가 [keyword]` - Add song to Spotify queue
+- `!건너뛰기` - Skip current track
+- `!현재곡` - Show current playing track
+- `!대기열` - Display upcoming tracks
+
+## Quick Start
+
+### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. 서버 시작
+### 2. Start Server
 ```bash
 node server.js
 ```
 
-### 3. 브라우저에서 접속
-- **컨트롤 패널**: http://localhost:7112
-- **채팅 오버레이**: http://localhost:7112/chat-overlay.html
+### 3. Access Dashboard
+- **Main Dashboard**: http://localhost:7112
+- **Chat Overlay**: http://localhost:7112/chat-overlay.html
+- **Spotify Widget**: http://localhost:7112/spotify-widget.html
 
-## 📁 프로젝트 구조
+## Project Structure
 
 ```
 ChzzkStreamDeck/
-├── 📁 src/                          # 소스 코드
-│   ├── 🎮 chat-client.js            # CHZZK 채팅 클라이언트
-│   └── 🎨 chat-overlay.html         # 채팅 오버레이 (OBS용)
-├── 📁 js/                           # 기존 JavaScript 파일들
-│   ├── 📁 modules/
-│   │   ├── chat.js                  # 채팅 모듈
-│   │   └── spotify.js               # Spotify 모듈
-│   └── 📁 utils/
-│       ├── settings.js              # 설정 유틸리티
-│       └── ui.js                    # UI 유틸리티
-├── 📁 css/                          # 스타일시트
-│   ├── components.css               # 컴포넌트 스타일
-│   ├── main.css                     # 메인 스타일
-│   └── themes.css                   # 테마 스타일
-├── 📁 test/                         # 테스트 파일들 (기존)
-│   ├── chzzk-chat-terminal.js       # 작동하는 채팅 터미널
-│   └── TERMINAL_TEST_GUIDE.md       # 테스트 가이드
-├── 🌐 server.js                     # 메인 백엔드 서버
-├── 🏠 index.html                    # 메인 대시보드
-└── 📦 package.json                  # 프로젝트 설정
+├── src/
+│   ├── chat-client.js           # CHZZK chat client
+│   ├── chat-overlay.html        # Chat overlay for OBS
+│   └── spotify-widget.html      # Spotify widget for OBS
+├── js/
+│   ├── modules/
+│   │   ├── chat.js              # Chat module
+│   │   ├── spotify.js           # Spotify module
+│   │   └── musicbot.js          # Music bot module
+│   ├── utils/
+│   │   ├── settings.js          # Settings management
+│   │   └── ui.js                # UI utilities
+│   └── main.js                  # Main application
+├── css/
+│   ├── components.css           # Component styles
+│   ├── main.css                 # Main styles
+│   └── themes.css               # Theme definitions
+├── server.js                    # Main backend server
+├── index.html                   # Main dashboard
+└── package.json                 # Project configuration
 ```
 
-## 🎯 사용 방법
+## Configuration
 
-### 1. 실제 CHZZK 채팅 사용
+### Chat Module Setup
+1. Open dashboard at http://localhost:7112
+2. Enter CHZZK Channel ID (32-character alphanumeric)
+3. Configure display settings (theme, duration, alignment)
+4. Click "Start Chat" to begin monitoring
 
-1. **서버 시작**:
-   ```bash
-   node server.js
-   ```
+### Spotify Module Setup
+1. Create Spotify application at https://developer.spotify.com/dashboard
+2. Set redirect URI to `http://localhost:7112/spotify/callback`
+3. Enter Client ID and Client Secret in dashboard
+4. Click "Authenticate" to complete OAuth flow
+5. Ensure Spotify Premium account for full functionality
 
-2. **컨트롤 패널에서 설정**:
-   - http://localhost:7112 접속
-   - 채널 ID 입력 (32자리 영숫자)
-   - **채팅 시작** 버튼 클릭
+### Music Bot Setup
+1. Ensure both Chat and Spotify modules are active
+2. Enable Music Bot in dashboard
+3. Customize command keywords if needed
+4. Music bot will automatically respond to chat commands
 
-3. **OBS 설정**:
-   - 소스 추가 → 브라우저
-   - URL: `http://localhost:7112/chat-overlay.html`
-   - 크기: 400x600px
+## OBS Integration
 
-## 🎨 테마 시스템
+### Chat Overlay
+1. Add Browser Source in OBS
+2. Set URL: `http://localhost:7112/chat-overlay.html`
+3. Dimensions: 400x600px recommended
+4. CSS: `body { background: transparent !important; }`
 
-### Simple Purple ✨
-- 마법같은 보라색 그라데이션 (#667eea, #764ba2)
-- 고급 애니메이션 효과 (bounce, scale, blur)
-- 호버 시 언더라인 확장 효과
-- 다층 그림자와 글로우 효과
-- 환상적인 배경 라디얼 그라데이션
+### Spotify Widget
+1. Add Browser Source in OBS
+2. Set URL: `http://localhost:7112/spotify-widget.html`
+3. Dimensions: 300x100px recommended
+4. Widget automatically syncs with dashboard authentication
+
+## API Endpoints
+
+### Chat Management
+- `POST /api/chat/start` - Start chat monitoring
+- `POST /api/chat/stop` - Stop chat monitoring
+- `GET /api/chat/stream` - Real-time chat stream (SSE)
+- `GET /api/chat/messages` - Retrieve chat messages
+
+### Spotify Management
+- `GET /api/spotify/token` - Check token status
+- `POST /api/spotify/token` - Save authentication token
+- `DELETE /api/spotify/token` - Clear authentication token
+- `POST /api/spotify/refresh` - Refresh access token
+- `GET /api/spotify/current-track` - Get current playing track
+- `POST /api/spotify/next` - Skip to next track
+- `POST /api/spotify/previous` - Skip to previous track
+- `POST /api/spotify/play` - Toggle play/pause
+
+### Server Status
+- `GET /api/status` - Get server and module status
+
+## Requirements
+
+### System Requirements
+- Node.js 14.0.0 or higher
+- npm 6.0.0 or higher
+- Modern browser with ES6+ support
+
+### Spotify Requirements
+- Spotify Premium account (required for queue management)
+- Active Spotify device (app must be playing music)
+- Valid Spotify Developer application
+
+### CHZZK Requirements
+- Valid CHZZK channel ID
+- Active live stream for real-time chat
+
+## Theme System
+
+### Simple Purple
+- Purple gradient background (#667eea, #764ba2)
+- Advanced animation effects
+- Hover effects and transitions
+- Multi-layer shadows and glow effects
 
 ### Neon Green
-- 네온 그린 색상 (#00ff00)
-- 사이버펑크 스타일
-- 글로우 효과 및 네온 애니메이션
+- Cyberpunk-style neon green theme
+- Glowing effects and animations
+- High contrast design
 
-## 🔧 API 엔드포인트
+## Troubleshooting
 
-### 메인 서버 (포트 3000)
-- `POST /api/chat/start` - 채팅 모듈 시작
-- `POST /api/chat/stop` - 채팅 모듈 중지  
-- `GET /api/chat/stream` - 실시간 채팅 스트림 (SSE)
-- `GET /api/chat/messages` - 채팅 메시지 조회
-- `GET /api/status` - 서버 상태 확인
+### Common Issues
 
-## 🛠️ 개발 가이드
+#### "App update required for normal viewing"
+- **Cause**: Stream is not live or incorrect channel ID
+- **Solution**: Verify channel ID of active live stream
 
-### 채팅 클라이언트 직접 실행
+#### Chat messages not appearing
+- **Cause**: Server connection issues or API limitations
+- **Solution**: 
+  1. Check server status at `/api/status`
+  2. Verify browser console for errors
+  3. Confirm firewall settings
+
+#### Spotify authentication fails
+- **Cause**: Incorrect client credentials or callback URL
+- **Solution**:
+  1. Verify Client ID and Client Secret
+  2. Ensure redirect URI matches dashboard settings
+  3. Check popup blocker settings
+
+#### Music bot commands not working
+- **Cause**: Missing Premium account or inactive device
+- **Solution**:
+  1. Upgrade to Spotify Premium
+  2. Start music playback in Spotify app
+  3. Verify authentication in dashboard
+
+#### Queue management fails (403 error)
+- **Cause**: Spotify Premium required or no active device
+- **Solution**:
+  1. Ensure Premium account subscription
+  2. Open Spotify app and start playing music
+  3. Verify device is active and visible
+
+## Development
+
+### Running in Development Mode
 ```bash
-node src/chat-client.js <채널ID> [--verbose]
+# Start server with debugging
+node server.js
+
+# Run chat client directly
+node src/chat-client.js <CHANNEL_ID>
+
+# Enable verbose logging
+node src/chat-client.js <CHANNEL_ID> --verbose
 ```
 
-### 채팅 오버레이 사용
-- **설정**: 메인 대시보드(`http://localhost:7112`)에서 모든 설정 관리
-- **오버레이**: 순수 채팅 표시 전용 (`http://localhost:7112/chat-overlay.html`)
-- **실시간 동기화**: 설정 변경 시 오버레이에 즉시 반영
-- **설정 항목**: 테마, 최대 메시지 수, 메시지 지속 시간, 정렬 방식
-- **채널 연동**: 메인 대시보드에서 CHZZK 채널 ID 설정
+### Module Development
+Each module is independently developed and can be extended:
+- Chat Module: `js/modules/chat.js`
+- Spotify Module: `js/modules/spotify.js`
+- Music Bot Module: `js/modules/musicbot.js`
 
-## 📋 요구사항
-
-- **Node.js**: 14.0.0 이상
-- **npm**: 6.0.0 이상
-- **브라우저**: Chrome, Firefox, Edge (ES6+ 지원)
-- **OBS Studio**: 27.0.0 이상 권장
-
-## 🎮 OBS 설정 가이드
-
-### 브라우저 소스 추가
-1. OBS Studio 열기
-2. **소스** → **추가** → **브라우저**
-3. 설정:
-   - **URL**: `http://localhost:7112/chat-overlay.html`
-   - **너비**: 400
-   - **높이**: 600
-   - **CSS**: `body { background: transparent !important; }`
-
-### 채팅 오버레이 특징
-- 깔끔한 UI: 방송용으로 최적화된 인터페이스  
-- 자연스러운 페이드: 상단 메시지 자동 페이드아웃 효과
-- 이모티콘 지원: CHZZK 이모티콘 실시간 표시
-- 고급 애니메이션: 마법같은 Simple Purple 테마 효과
-- 정렬 옵션: 왼쪽/오른쪽/중앙 정렬 지원
-- 실시간 설정: 메인 대시보드 설정이 즉시 반영
-- 스마트 관리: 메시지 수 및 지속 시간 자동 제어
-
-### 권장 설정
-- **새로고침**: 체크 해제
-- **페이지 권한**: 모두 허용
-- **하드웨어 가속**: 활성화
-
-## 🔍 문제 해결
-
-### 자주 발생하는 문제
-
-#### 1. "앱 업데이트 후에 정상 시청 가능합니다"
-- **원인**: 방송이 진행 중이 아니거나 채널 ID 오류
-- **해결**: 라이브 방송 중인 채널 ID 확인
-
-#### 2. 채팅 메시지가 안 나타남
-- **원인**: 서버 연결 문제 또는 API 제한
-- **해결**: 
-  1. 서버 상태 확인 (`GET /api/status`)
-  2. 브라우저 콘솔 오류 확인
-  3. 방화벽 설정 확인
-
-#### 3. WebSocket 연결 실패
-- **원인**: 네트워크 문제 또는 서버 과부하
-- **해결**: 
-  1. 다른 채널 ID로 테스트
-  2. VPN 사용 시 해제
-  3. 서버 재시작 후 다시 시도
-
-## 📈 버전 히스토리
+## Version History
 
 ### v2.0.0 (2024-12-19)
-- ✨ 전체 코드 리팩토링
-- 🏗️ 모듈화된 아키텍처
-- 🎨 마법같은 Simple Purple 테마 시스템
-- 😀 CHZZK 이모티콘 완전 지원
-- 📡 안정적인 SSE 연결
-- 🎯 간편한 URL 접근
-- 🎥 방송 최적화 오버레이
-- ✨ 고급 애니메이션 및 시각 효과
-- 🔄 실시간 설정 동기화
-- 🎨 자연스러운 상단 페이드 효과
-- 📐 다양한 정렬 옵션 (왼쪽/오른쪽/중앙)
+- Complete system rewrite with modular architecture
+- Spotify integration with OAuth 2.0 authentication
+- Music bot with chat command system
+- Server-based token management
+- Enhanced chat overlay with theme support
+- Centralized settings management
+- OBS browser source optimization
+- Real-time synchronization between dashboard and widgets
 
 ### v1.x.x
-- 기본 채팅 기능
-- 간단한 오버레이
+- Basic chat functionality
+- Simple overlay system
 
-## 🤝 기여하기
+## Contributing
 
-1. 이 저장소를 포크합니다
-2. 기능 브랜치를 생성합니다 (`git checkout -b feature/AmazingFeature`)
-3. 변경사항을 커밋합니다 (`git commit -m 'Add some AmazingFeature'`)
-4. 브랜치에 푸시합니다 (`git push origin feature/AmazingFeature`)
-5. Pull Request를 생성합니다
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/NewFeature`)
+3. Commit changes (`git commit -m 'Add NewFeature'`)
+4. Push to branch (`git push origin feature/NewFeature`)
+5. Create Pull Request
 
-## 📄 라이선스
+## License
 
-이 프로젝트는 MIT 라이선스 하에 있습니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
-## 🙏 감사의 말
+## Acknowledgments
 
-- **CHZZK API**: 실시간 채팅 데이터 제공
-- **OBS Studio**: 강력한 스트리밍 소프트웨어
-- **Node.js 커뮤니티**: 훌륭한 생태계
+- CHZZK API for real-time chat data
+- Spotify Web API for music integration
+- OBS Studio for streaming capabilities
+- Node.js community for excellent ecosystem
 
 ---
 
-💡 **팁**: 문제가 발생하면 먼저 테스트 서버로 오버레이가 정상 작동하는지 확인해보세요!
-
-🎮 **해피 스트리밍!** 🎮 
+For technical support and bug reports, please create an issue in the repository. 

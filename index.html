@@ -83,6 +83,51 @@
                         </div>
                     </div>
             </div>
+
+            <!-- 음악봇 모듈 -->
+            <div class="module-card" id="musicbot-module">
+                <div class="module-header">
+                    <div class="module-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="module-info">
+                        <h3>음악봇</h3>
+                        <p>채팅 명령으로 음악 제어</p>
+                    </div>
+                    <div class="module-controls">
+                        <button class="settings-btn" onclick="openSettings('musicbot')">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <label class="switch">
+                            <input type="checkbox" id="musicbot-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="module-preview" id="musicbot-preview">
+                    <div class="browser-source-section">
+                        <h4>사용 가능한 명령어</h4>
+                        <div class="command-list">
+                            <div class="command-item">
+                                <strong>!노래추가 [키워드]</strong>
+                                <span>Spotify에서 검색하여 대기열에 추가</span>
+                            </div>
+                            <div class="command-item">
+                                <strong>!건너뛰기</strong>
+                                <span>현재 재생 중인 곡 건너뛰기</span>
+                            </div>
+                            <div class="command-item">
+                                <strong>!현재곡</strong>
+                                <span>현재 재생 중인 곡 정보</span>
+                            </div>
+                            <div class="command-item">
+                                <strong>!대기열</strong>
+                                <span>대기열 확인 (다음 3곡)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -117,9 +162,17 @@
                         </div>
                         <div class="setting-item">
                             <label for="spotify-auth-btn">스포티파이 인증</label>
-                            <button class="btn btn-primary" id="spotify-auth-btn" onclick="authenticateSpotify()">
-                                <i class="fab fa-spotify"></i> 인증받기
-                            </button>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" id="spotify-auth-btn" onclick="authenticateSpotify()">
+                                    <i class="fab fa-spotify"></i> 인증받기
+                                </button>
+                                <button class="btn btn-secondary" onclick="checkSpotifyTokens()">
+                                    <i class="fas fa-info-circle"></i> 토큰 상태 확인
+                                </button>
+                                <button class="btn btn-secondary" onclick="clearSpotifyTokens()">
+                                    <i class="fas fa-trash"></i> 토큰 삭제
+                                </button>
+                            </div>
                         </div>
 
                     </div>
@@ -191,6 +244,64 @@
                     
 
                 </div>
+
+                <!-- 음악봇 설정 -->
+                <div id="musicbot-settings" class="settings-panel" style="display: none;">
+                    <div class="settings-section">
+                        <h3>음악봇 설정</h3>
+                        <div class="setting-item info-message">
+                            <small>💡 음악봇은 채팅 모듈과 Spotify 모듈이 모두 실행되어야 작동합니다.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>명령어 설정</h3>
+                        <div class="setting-item">
+                            <label for="musicbot-cmd-add">노래 추가 명령어</label>
+                            <input type="text" id="musicbot-cmd-add" value="!노래추가">
+                        </div>
+                        <div class="setting-item">
+                            <label for="musicbot-cmd-skip">건너뛰기 명령어</label>
+                            <input type="text" id="musicbot-cmd-skip" value="!건너뛰기">
+                        </div>
+                        <div class="setting-item">
+                            <label for="musicbot-cmd-current">현재곡 명령어</label>
+                            <input type="text" id="musicbot-cmd-current" value="!현재곡">
+                        </div>
+                        <div class="setting-item">
+                            <label for="musicbot-cmd-queue">대기열 명령어</label>
+                            <input type="text" id="musicbot-cmd-queue" value="!대기열">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>기본 설정</h3>
+                        <div class="setting-item">
+                            <label for="musicbot-enabled">음악봇 활성화</label>
+                            <select id="musicbot-enabled">
+                                <option value="true" selected>활성화</option>
+                                <option value="false">비활성화</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>상태 확인</h3>
+                        <div class="setting-item">
+                            <label>필요한 모듈 상태</label>
+                            <div class="status-indicators">
+                                <div class="status-item">
+                                    <span class="status-label">채팅 모듈:</span>
+                                    <span class="status-value" id="musicbot-status-chat">비활성화</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Spotify 모듈:</span>
+                                    <span class="status-value" id="musicbot-status-spotify">비활성화</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeSettings()">취소</button>
@@ -203,6 +314,74 @@
     <script src="js/utils/ui.js"></script>
     <script src="js/modules/spotify.js"></script>
     <script src="js/modules/chat.js"></script>
+    <script src="js/modules/musicbot.js"></script>
     <script src="js/main.js"></script>
+    
+    <script>
+        // 전역 함수들
+        let app;
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            app = new App();
+            window.app = app;
+        });
+        
+        // 설정 관련 함수
+        function openSettings(moduleName) {
+            app.uiManager.openSettings(moduleName);
+        }
+        
+        function closeSettings() {
+            app.uiManager.closeSettings();
+        }
+        
+        function saveSettings() {
+            app.uiManager.saveSettings();
+        }
+        
+        function copyToClipboard(elementId) {
+            app.uiManager.copyToClipboard(elementId);
+        }
+        
+        function authenticateSpotify() {
+            app.spotifyModule.authenticate();
+        }
+        
+        // 음악봇 테스트 함수
+        function testMusicBot() {
+            if (app.musicBotModule.isActive) {
+                app.musicBotModule.handleChatMessage({
+                    username: '테스트사용자',
+                    message: '!노래추가 아이유 좋은날'
+                });
+            }
+        }
+        
+        // Spotify 토큰 상태 확인
+        function checkSpotifyTokens() {
+            const token = localStorage.getItem('spotify-access-token');
+            const refreshToken = localStorage.getItem('spotify-refresh-token');
+            const expiry = localStorage.getItem('spotify-token-expiry');
+            
+            console.log('🔍 Spotify 토큰 상태 확인:');
+            console.log('Access Token:', token ? token.substring(0, 20) + '...' : '없음');
+            console.log('Refresh Token:', refreshToken ? refreshToken.substring(0, 20) + '...' : '없음');
+            console.log('만료 시간:', expiry ? new Date(parseInt(expiry)).toLocaleString() : '없음');
+            console.log('토큰 상태:', expiry && Date.now() < parseInt(expiry) ? '✅ 유효' : '❌ 만료됨 또는 없음');
+            
+            alert(`토큰 상태:\n- Access Token: ${token ? '있음' : '없음'}\n- Refresh Token: ${refreshToken ? '있음' : '없음'}\n- 만료 시간: ${expiry ? new Date(parseInt(expiry)).toLocaleString() : '없음'}\n- 상태: ${expiry && Date.now() < parseInt(expiry) ? '유효' : '만료됨 또는 없음'}\n\n자세한 정보는 개발자 도구 콘솔을 확인하세요.`);
+        }
+        
+        // Spotify 토큰 삭제
+        function clearSpotifyTokens() {
+            if (confirm('저장된 Spotify 토큰을 삭제하시겠습니까?')) {
+                localStorage.removeItem('spotify-access-token');
+                localStorage.removeItem('spotify-refresh-token');
+                localStorage.removeItem('spotify-token-expiry');
+                console.log('🗑️ Spotify 토큰 삭제 완료');
+                alert('Spotify 토큰이 삭제되었습니다. 다시 인증해주세요.');
+            }
+        }
+    </script>
 </body>
 </html> 

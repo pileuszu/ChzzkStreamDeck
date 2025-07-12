@@ -67,21 +67,9 @@
             padding: 20px 20px 20px 60px;
             position: relative;
             justify-content: flex-end;
-            /* 상단 페이드아웃 효과 */
-            mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 5%, rgba(0,0,0,0.5) 15%, rgba(0,0,0,0.8) 25%, black 35%);
-            -webkit-mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 5%, rgba(0,0,0,0.5) 15%, rgba(0,0,0,0.8) 25%, black 35%);
-        }
-
-        .chat-messages::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 150px;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 20%, rgba(255,255,255,0.3) 50%, transparent 100%);
-            z-index: 10;
-            pointer-events: none;
+            /* 자연스러운 상단 페이드아웃 효과 */
+            mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 8%, rgba(0,0,0,0.4) 16%, rgba(0,0,0,0.7) 24%, rgba(0,0,0,0.9) 32%, black 40%);
+            -webkit-mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 8%, rgba(0,0,0,0.4) 16%, rgba(0,0,0,0.7) 24%, rgba(0,0,0,0.9) 32%, black 40%);
         }
 
         /* ===== 정렬 방식 CSS ===== */
@@ -409,11 +397,11 @@
              * 초기화
              */
             init() {
+                console.log('🚀 채팅 오버레이 초기화 시작');
                 this.loadSettings();
                 this.connectToServer();
                 this.setupEventListeners();
-                
-
+                console.log('✅ 채팅 오버레이 초기화 완료');
             }
 
             /**
@@ -444,23 +432,41 @@
              * 설정 로드
              */
             loadSettings() {
-                // index.html의 설정값들 로드
-                const settings = {
-                    theme: localStorage.getItem('chat-theme') || 'simple-purple',
-                    maxMessages: localStorage.getItem('chat-max-messages') || '20',
-                    messageTimeout: localStorage.getItem('chat-fade-time') || '30',
-                    serverUrl: localStorage.getItem('serverUrl') || 'http://localhost:7112',
-                    alignment: localStorage.getItem('chat-alignment') || 'default',
-                    platform: localStorage.getItem('chat-platform') || 'chzzk',
-                    channelId: localStorage.getItem('chat-channel-id') || ''
+                // localStorage에서 설정값 원본 읽기
+                const rawSettings = {
+                    theme: localStorage.getItem('chat-theme'),
+                    maxMessages: localStorage.getItem('chat-max-messages'),
+                    messageTimeout: localStorage.getItem('chat-fade-time'),
+                    serverUrl: localStorage.getItem('serverUrl'),
+                    alignment: localStorage.getItem('chat-alignment'),
+                    platform: localStorage.getItem('chat-platform'),
+                    channelId: localStorage.getItem('chat-channel-id')
                 };
                 
-                this.maxMessages = parseInt(settings.maxMessages) || 20;
-
+                console.log('📋 localStorage 원본 설정값:', rawSettings);
+                
+                // 설정값 처리
+                const settings = {
+                    theme: rawSettings.theme || 'simple-purple',
+                    maxMessages: rawSettings.maxMessages || '20',
+                    messageTimeout: rawSettings.messageTimeout || '0',  // 기본값을 0으로 변경
+                    serverUrl: rawSettings.serverUrl || 'http://localhost:7112',
+                    alignment: rawSettings.alignment || 'default',
+                    platform: rawSettings.platform || 'chzzk',
+                    channelId: rawSettings.channelId || ''
+                };
+                
+                console.log('📋 처리된 설정값:', settings);
+                
+                // 최대 메시지 수 설정
+                const maxMessagesValue = parseInt(settings.maxMessages);
+                this.maxMessages = isNaN(maxMessagesValue) ? 20 : Math.max(1, maxMessagesValue);
                 
                 // 메시지 타임아웃 처리 개선
                 const timeoutValue = parseInt(settings.messageTimeout);
-                this.messageTimeout = isNaN(timeoutValue) ? 30 : timeoutValue;
+                this.messageTimeout = isNaN(timeoutValue) ? 0 : Math.max(0, timeoutValue);
+                
+                console.log(`💬 채팅 설정 적용: 최대 메시지 ${this.maxMessages}개, 지속시간 ${this.messageTimeout === 0 ? '무제한' : this.messageTimeout + '초'}`);
                 
                 this.serverUrl = settings.serverUrl;
                 this.alignment = settings.alignment;
@@ -472,8 +478,6 @@
                 
                 // 정렬 방식 적용
                 this.applyChatAlignment(settings.alignment);
-                
-
             }
 
             /**
@@ -560,16 +564,20 @@
                     timestamp: Date.now()
                 });
                 
-                // 항상 메시지 수 관리 실행
+                const currentCount = this.messages.length;
+                console.log(`📝 새 메시지 추가: "${messageData.username}: ${messageData.message.substring(0, 30)}..." (총 ${currentCount}개)`);
+                
+                // 최대 메시지 수 관리 (항상 실행)
                 this.cleanupExcessMessages();
                 
                 // 자동 삭제 타이머 설정 (타이머가 0이 아닐 때만)
                 if (this.messageTimeout > 0) {
+                    console.log(`⏰ 메시지 자동 삭제 타이머 설정: ${this.messageTimeout}초`);
                     setTimeout(() => {
                         this.removeMessage(messageElement);
                     }, this.messageTimeout * 1000);
-                    
-
+                } else {
+                    console.log('⏰ 메시지 자동 삭제 비활성화 (무제한 유지)');
                 }
                 
                 // 페이드 아웃 효과 적용
@@ -597,22 +605,22 @@
                     
                     // 자연스러운 곡선 함수로 opacity 계산
                     let opacity;
-                    if (position < 0.3) {
-                        // 상단 30% 구간에서 급격히 감소
-                        opacity = Math.pow(position / 0.3, 2) * 0.3;
-                    } else if (position < 0.6) {
-                        // 중간 구간에서 완만히 증가
-                        opacity = 0.3 + (position - 0.3) / 0.3 * 0.4;
+                    if (position < 0.2) {
+                        // 상단 20% 구간에서 완만히 감소
+                        opacity = Math.pow(position / 0.2, 1.5) * 0.6;
+                    } else if (position < 0.5) {
+                        // 중간 구간에서 점진적 증가
+                        opacity = 0.6 + (position - 0.2) / 0.3 * 0.25;
                     } else {
                         // 하단 구간에서 완전히 표시
-                        opacity = 0.7 + (position - 0.6) / 0.4 * 0.3;
+                        opacity = 0.85 + (position - 0.5) / 0.5 * 0.15;
                     }
                     
-                    container.style.opacity = Math.max(0.05, Math.min(1, opacity));
+                    container.style.opacity = Math.max(0.3, Math.min(1, opacity));
                     
-                    // 상단 메시지에 추가 블러 효과
-                    if (position < 0.4) {
-                        const blurAmount = (1 - position / 0.4) * 2;
+                    // 상단 메시지에 약간의 블러 효과만 적용
+                    if (position < 0.3) {
+                        const blurAmount = (1 - position / 0.3) * 0.8;
                         container.style.filter = `blur(${blurAmount}px)`;
                     } else {
                         container.style.filter = 'none';
@@ -732,7 +740,8 @@
              * 초과 메시지 정리
              */
             cleanupExcessMessages() {
-
+                const currentMessageCount = this.messages.length;
+                console.log(`🧹 메시지 정리 확인: 현재 ${currentMessageCount}개, 최대 ${this.maxMessages}개`);
                 
                 let removedCount = 0;
                 while (this.messages.length > this.maxMessages) {
@@ -742,9 +751,11 @@
                 }
                 
                 if (removedCount > 0) {
-
+                    console.log(`🗑️ 최대 메시지 수 초과로 ${removedCount}개 메시지 제거됨`);
                     // 메시지 제거 후 페이드 효과 재적용
                     this.applyFadeEffect();
+                } else {
+                    console.log('✅ 메시지 수 정상 범위 내');
                 }
             }
 
@@ -754,6 +765,8 @@
             removeMessage(messageElement) {
                 if (!messageElement || !messageElement.parentNode) return;
                 
+                console.log('⏰ 메시지 타임아웃으로 제거 시작 (페이드 아웃)');
+                
                 const chatMessage = messageElement.querySelector('.chat-message');
                 if (chatMessage) {
                     chatMessage.classList.add('fade-out');
@@ -761,6 +774,7 @@
                 
                 setTimeout(() => {
                     this.removeMessageImmediately(messageElement);
+                    console.log('⏰ 메시지 타임아웃 제거 완료');
                 }, 500);
             }
 
@@ -770,10 +784,16 @@
             removeMessageImmediately(messageElement) {
                 if (!messageElement || !messageElement.parentNode) return;
                 
+                console.log('🗑️ 메시지 즉시 제거 실행');
+                
                 messageElement.parentNode.removeChild(messageElement);
                 
                 // 배열에서도 제거
+                const beforeCount = this.messages.length;
                 this.messages = this.messages.filter(msg => msg.element !== messageElement);
+                const afterCount = this.messages.length;
+                
+                console.log(`📊 메시지 배열 업데이트: ${beforeCount}개 → ${afterCount}개`);
                 
                 // 메시지 제거 후 페이드 효과 재적용
                 this.applyFadeEffect();

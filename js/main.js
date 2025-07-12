@@ -6,6 +6,7 @@ class App {
         this.uiManager = new UIManager(this);
         this.spotifyModule = new SpotifyModule(this.settingsManager);
         this.chatModule = new ChatModule(this.settingsManager);
+        this.musicBotModule = new MusicBotModule(this.settingsManager);
         
         this.init();
     }
@@ -61,6 +62,19 @@ class App {
             }
             this.uiManager.updateModuleCard('chat', this.chatModule.isActive);
         });
+
+        // 음악봇 토글
+        document.getElementById('musicbot-toggle').addEventListener('change', async (e) => {
+            if (e.target.checked) {
+                const success = await this.musicBotModule.start();
+                if (!success) {
+                    e.target.checked = false;
+                }
+            } else {
+                this.musicBotModule.stop();
+            }
+            this.uiManager.updateModuleCard('musicbot', this.musicBotModule.isActive);
+        });
         
         // 모달 외부 클릭시 닫기
         window.addEventListener('click', (e) => {
@@ -98,12 +112,15 @@ class App {
         switch (status) {
             case 'authenticated':
                 authButton.innerHTML = '<i class="fab fa-spotify"></i> 재인증';
+                authButton.className = 'btn btn-success';
                 break;
             case 'expired':
                 authButton.innerHTML = '<i class="fab fa-spotify"></i> 재인증';
+                authButton.className = 'btn btn-warning';
                 break;
             case 'not_authenticated':
                 authButton.innerHTML = '<i class="fab fa-spotify"></i> 인증받기';
+                authButton.className = 'btn btn-primary';
                 break;
         }
     }
@@ -123,53 +140,7 @@ class App {
         }
     }
     
-    // 스포티파이 토큰 교환
-    async exchangeSpotifyCodeForToken(code) {
-        const clientId = localStorage.getItem('spotify-client-id');
-        const clientSecret = localStorage.getItem('spotify-client-secret');
-        
-        if (!clientId || !clientSecret) {
-            alert('Spotify Client ID와 Client Secret을 먼저 설정해주세요.');
-            return;
-        }
-        
-        try {
-            const response = await fetch('https://accounts.spotify.com/api/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': 'Basic ' + btoa(`${clientId}:${clientSecret}`)
-                },
-                body: new URLSearchParams({
-                    grant_type: 'authorization_code',
-                    code: code,
-                    redirect_uri: 'http://localhost:7112/spotify/callback'
-                })
-            });
 
-            const data = await response.json();
-            
-            if (response.ok) {
-                // 토큰 저장
-                localStorage.setItem('spotify-access-token', data.access_token);
-                localStorage.setItem('spotify-refresh-token', data.refresh_token);
-                localStorage.setItem('spotify-token-expiry', Date.now() + (data.expires_in * 1000));
-                
-
-                this.updateSpotifyAuthStatus('authenticated');
-                
-                // 성공 메시지 표시
-                if (this.uiManager) {
-                    this.uiManager.showSuccess('스포티파이 인증이 완료되었습니다!');
-                }
-            } else {
-                throw new Error(data.error_description || '토큰 교환 실패');
-            }
-        } catch (error) {
-            console.error('❌ 스포티파이 토큰 교환 실패:', error);
-            alert('스포티파이 인증 실패: ' + error.message);
-        }
-    }
 }
 
 // 애플리케이션 시작
@@ -193,49 +164,109 @@ window.copyToClipboard = (elementId) => {
 };
 
 // 스포티파이 인증 함수
-window.authenticateSpotify = () => {
-    const clientId = localStorage.getItem('spotify-client-id');
-    const clientSecret = localStorage.getItem('spotify-client-secret');
-    const redirectUri = localStorage.getItem('spotify-redirect-uri') || 'http://localhost:7112/spotify/callback';
+window.authenticateSpotify = async () => {
+    console.log('🎵 인증 버튼 클릭됨');
     
-    if (!clientId || !clientSecret) {
-        alert('Spotify Client ID와 Client Secret을 먼저 입력하고 저장해주세요.');
-        return;
+    if (app.spotifyModule) {
+        try {
+            const result = await app.spotifyModule.authenticate();
+            console.log('🎵 인증 결과:', result);
+            
+            if (result) {
+                // 인증 성공 - 버튼 상태 업데이트
+                app.updateSpotifyAuthStatus('authenticated');
+            }
+        } catch (error) {
+            console.error('❌ 인증 중 오류:', error);
+            
+            if (window.app && window.app.uiManager) {
+                window.app.uiManager.showError(`인증 실패: ${error.message}`);
+            } else {
+                alert(`인증 실패: ${error.message}`);
+            }
+        }
+    } else {
+        console.error('❌ Spotify 모듈이 초기화되지 않음');
+        alert('Spotify 모듈이 초기화되지 않았습니다.');
+    }
+};
+
+// 스포티파이 토큰 상태 확인 함수
+window.checkSpotifyTokens = () => {
+    console.log('🔍 토큰 상태 확인');
+    
+    const accessToken = localStorage.getItem('spotify-access-token');
+    const refreshToken = localStorage.getItem('spotify-refresh-token');
+    const tokenExpiry = localStorage.getItem('spotify-token-expiry');
+    
+    let statusMessage = '🔍 Spotify 토큰 상태:\n\n';
+    
+    if (!accessToken) {
+        statusMessage += '❌ 액세스 토큰: 없음\n';
+    } else {
+        statusMessage += `✅ 액세스 토큰: 있음 (${accessToken.substring(0, 20)}...)\n`;
     }
     
-    // 스포티파이 인증 URL 생성
-    const authUrl = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({
-        response_type: 'code',
-        client_id: clientId,
-        scope: 'user-read-currently-playing user-read-playback-state',
-        redirect_uri: redirectUri,
-        show_dialog: 'true'
-    });
+    if (!refreshToken) {
+        statusMessage += '❌ 리프레시 토큰: 없음\n';
+    } else {
+        statusMessage += `✅ 리프레시 토큰: 있음 (${refreshToken.substring(0, 20)}...)\n`;
+    }
     
+    if (!tokenExpiry) {
+        statusMessage += '❌ 토큰 만료 시간: 없음\n';
+    } else {
+        const expiryDate = new Date(parseInt(tokenExpiry));
+        const isExpired = Date.now() > parseInt(tokenExpiry);
+        statusMessage += `🕐 토큰 만료 시간: ${expiryDate.toLocaleString()}\n`;
+        statusMessage += `${isExpired ? '❌ 상태: 만료됨' : '✅ 상태: 유효함'}\n`;
+    }
+    
+    if (window.app && window.app.uiManager) {
+        window.app.uiManager.showInfo(statusMessage);
+    } else {
+        alert(statusMessage);
+    }
+};
 
+// 스포티파이 토큰 삭제 함수
+window.clearSpotifyTokens = () => {
+    console.log('🗑️ 토큰 삭제');
     
-    // 새 창으로 인증 페이지 열기
-    const authWindow = window.open(authUrl, 'spotify-auth', 'width=600,height=700');
-    
-    // 메시지 리스너 등록
-    const messageListener = (event) => {
-        if (event.data.type === 'spotify-auth-success') {
-
-            window.removeEventListener('message', messageListener);
-            app.exchangeSpotifyCodeForToken(event.data.code);
+    if (confirm('모든 Spotify 토큰을 삭제하시겠습니까?\n다시 인증받아야 합니다.')) {
+        localStorage.removeItem('spotify-access-token');
+        localStorage.removeItem('spotify-refresh-token');
+        localStorage.removeItem('spotify-token-expiry');
+        
+        // 서버에서도 토큰 삭제
+        fetch('http://localhost:7112/api/spotify/token', {
+            method: 'DELETE'
+        }).then(response => response.json())
+          .then(result => {
+              console.log('🗑️ 서버 토큰 삭제:', result.message);
+          })
+          .catch(error => {
+              console.error('❌ 서버 토큰 삭제 오류:', error);
+          });
+        
+        // 스포티파이 모듈 상태 초기화
+        if (app.spotifyModule) {
+            app.spotifyModule.accessToken = null;
+            app.spotifyModule.refreshToken = null;
+            app.spotifyModule.isAuthenticated = false;
         }
-    };
-    
-    window.addEventListener('message', messageListener);
-    
-    // 창이 닫히면 리스너 제거
-    const checkClosed = setInterval(() => {
-        if (authWindow.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener('message', messageListener);
-
+        
+        // 버튼 상태 업데이트
+        app.updateSpotifyAuthStatus('not_authenticated');
+        
+        console.log('✅ 모든 토큰이 삭제되었습니다');
+        
+        if (window.app && window.app.uiManager) {
+            window.app.uiManager.showSuccess('모든 토큰이 삭제되었습니다.');
+        } else {
+            alert('모든 토큰이 삭제되었습니다.');
         }
-    }, 1000);
+    }
 };
 
 // 앱 인스턴스를 전역에서 접근 가능하도록

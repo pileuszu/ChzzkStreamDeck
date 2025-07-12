@@ -517,10 +517,15 @@ class ChatModule {
         
         // 설정에 따른 메시지 제한 및 페이드 아웃
         const settings = this.settingsManager.getModuleSettings('chat');
+        console.log('💬 채팅 설정 확인:', settings);
         this.limitMessages(settings.maxMessages || 50);
         
+        // 메시지 유지 시간 설정 (fadeTime이 0이면 무제한)
         if (settings.fadeTime && settings.fadeTime > 0) {
+            console.log(`⏰ 메시지 제거 예약: ${settings.fadeTime}초 후`);
             this.scheduleMessageRemoval(settings.fadeTime * 1000);
+        } else {
+            console.log('⏰ 메시지 유지 시간: 무제한');
         }
     }
     

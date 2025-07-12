@@ -632,4 +632,60 @@ input[type="number"] {
         width: 20px;
         height: 20px;
     }
+}
+
+/* 음악봇 명령어 리스트 */
+.command-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.command-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.command-item strong {
+    color: #9945ff;
+    font-size: 0.9em;
+}
+
+.command-item span {
+    color: #b3b3b3;
+    font-size: 0.8em;
+}
+
+/* 음악봇 상태 인디케이터 */
+.status-indicators {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.status-label {
+    font-size: 0.9em;
+    color: #b3b3b3;
+}
+
+.status-value {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: #ff6b6b;
+}
+
+.status-value.active {
+    color: #4ecdc4;
 } 
