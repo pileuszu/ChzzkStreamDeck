@@ -348,13 +348,12 @@ class ChzzkChatClient {
                 // 서버 하트비트 요청 - 응답 필요
                 const response = { ver: "2", cmd: 10000 };
                 this.websocket.send(JSON.stringify(response));
-                this.verbose('💓 하트비트 응답 전송');
+
                 break;
                 
             case 10100:
                 // 인증 완료
-                this.log('🔓 채팅 인증 완료');
-                this.log('💬 채팅 메시지 수신 중... (Ctrl+C로 종료)');
+                this.log('💬 채팅 연결 완료');
                 break;
                 
             case 93101:
@@ -363,7 +362,7 @@ class ChzzkChatClient {
                 break;
                 
             default:
-                this.verbose(`📨 알 수 없는 메시지: cmd=${message.cmd}`);
+
         }
     }
 
@@ -399,7 +398,7 @@ class ChzzkChatClient {
                 }
                 
             } catch (error) {
-                this.verbose(`⚠️ 채팅 메시지 처리 오류: ${error.message}`);
+
             }
         }
     }
@@ -426,7 +425,7 @@ class ChzzkChatClient {
             return null;
             
         } catch (error) {
-            this.verbose(`⚠️ 이모티콘 추출 오류: ${error.message}`);
+
             return null;
         }
     }
@@ -455,13 +454,9 @@ class ChzzkChatClient {
      * 연결 종료
      */
     disconnect() {
-        this.log('🛑 채팅 클라이언트 종료 중...');
-        
         this.stopHeartbeat();
         this.cleanupWebSocket();
         this.isConnected = false;
-        
-        this.log('✅ 채팅 클라이언트 종료 완료');
     }
 
     /**
@@ -501,13 +496,11 @@ if (require.main === module) {
     
     // 프로세스 종료 시 정리
     process.on('SIGINT', () => {
-        console.log('\n🛑 프로그램 종료 중...');
         client.disconnect();
         process.exit(0);
     });
     
     process.on('SIGTERM', () => {
-        console.log('\n🛑 프로그램 종료 중...');
         client.disconnect();
         process.exit(0);
     });

@@ -18,11 +18,45 @@ class ChatModule {
             'Referer': 'https://chzzk.naver.com/',
             'Origin': 'https://chzzk.naver.com'
         };
+        
+        // 페이지 로드 시 상태 확인
+        this.checkInitialStatus();
+    }
+    
+    // 초기 상태 확인
+    async checkInitialStatus() {
+        try {
+            const response = await fetch(`http://localhost:7112/api/status`);
+            const result = await response.json();
+            
+            if (result.success && result.status.chat && result.status.chat.active) {
+                this.isActive = true;
+                this.isConnected = true;
+                
+                // 토글 스위치 활성화
+                const toggle = document.getElementById('chat-toggle');
+                if (toggle) {
+                    toggle.checked = true;
+                }
+                
+                // 모듈 카드 업데이트
+                if (window.app && window.app.uiManager) {
+                    window.app.uiManager.updateModuleCard('chat', true);
+                }
+                
+                // 상태 모니터링 시작
+                this.startStatusMonitoring();
+                
+                console.log('✅ 채팅 모듈이 이미 실행 중입니다.');
+            }
+        } catch (error) {
+            // 서버가 실행되지 않은 경우 무시
+        }
     }
     
     // 모듈 시작
     async start() {
-        console.log('🎛️ 채팅 모듈 시작 요청 중...');
+
         
         const settings = this.settingsManager.getModuleSettings('chat');
         
@@ -39,10 +73,10 @@ class ChatModule {
         this.channelId = settings.channelId;
         
         try {
-            console.log('📡 백엔드 서버에 채팅 모듈 시작 요청...');
+
             
             // 백엔드 API 호출
-            const response = await fetch('http://localhost:3000/api/chat/start', {
+            const response = await fetch(`http://localhost:7112/api/chat/start`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -56,8 +90,7 @@ class ChatModule {
             
             if (result.success) {
                 this.isActive = true;
-                console.log('✅ 채팅 모듈이 터미널에서 시작되었습니다.');
-                console.log(`📱 프로세스 ID: ${result.pid}`);
+                console.log('✅ 채팅 연결');
                 
                 // 상태 모니터링 시작
                 this.startStatusMonitoring();
@@ -90,12 +123,12 @@ class ChatModule {
 
     // 상태 모니터링 시작
     startStatusMonitoring() {
-        console.log('📊 채팅 모듈 상태 모니터링 시작...');
+
         
         // 5초마다 백엔드 서버 상태 확인
         this.statusInterval = setInterval(async () => {
             try {
-                const response = await fetch('http://localhost:3000/api/status');
+                const response = await fetch(`http://localhost:7112/api/status`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -103,7 +136,7 @@ class ChatModule {
                     
                     // 프로세스가 종료된 경우
                     if (!chatStatus.active && this.isActive) {
-                        console.log('⚠️ 채팅 프로세스가 예상치 못하게 종료되었습니다.');
+                        console.log('⚠️ 채팅 연결 종료');
                         this.isActive = false;
                         this.isConnected = false;
                         
@@ -126,18 +159,18 @@ class ChatModule {
                 }
                 
             } catch (error) {
-                console.warn('🔄 상태 모니터링 오류:', error.message);
+                
             }
         }, 5000);
     }
     
     // 모듈 중지
     async stop() {
-        console.log('🛑 채팅 모듈 중지 요청 중...');
+
         
         try {
             // 백엔드 API 호출
-            const response = await fetch('http://localhost:3000/api/chat/stop', {
+            const response = await fetch(`http://localhost:7112/api/chat/stop`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -156,13 +189,13 @@ class ChatModule {
                     this.statusInterval = null;
                 }
                 
-                console.log('✅ 채팅 모듈이 중지되었습니다.');
+                console.log('✅ 채팅 종료');
                 
                 if (window.app && window.app.uiManager) {
                     window.app.uiManager.showSuccess('채팅 모듈이 중지되었습니다.');
                 }
             } else {
-                console.warn('⚠️ 채팅 모듈 중지 요청 실패:', result.error);
+
             }
             
         } catch (error) {
@@ -175,7 +208,7 @@ class ChatModule {
     
     // 모듈 재시작
     async restart() {
-        console.log('CHZZK 채팅 모듈 재시작 중...');
+
         this.stop();
         await new Promise(resolve => setTimeout(resolve, 500));
         return await this.start();
@@ -191,12 +224,12 @@ class ChatModule {
             if (response.ok) {
                 const data = await response.json();
                 if (data.code === 200 && data.content) {
-                    console.log(`CHZZK 채널 정보 획득: ${data.content.channelName || 'N/A'}`);
+
                     return data.content;
                 }
             }
         } catch (error) {
-            console.warn(`채널 정보 요청 실패: ${error.message}`);
+
         }
         return null;
     }
@@ -213,7 +246,7 @@ class ChatModule {
                 if (data.code === 200 && data.content) {
                     const content = data.content;
                     this.chatChannelId = content.chatChannelId;
-                    console.log(`라이브 상태: ${content.status || content.liveStatus}`);
+    
                     return content;
                 }
             }
@@ -239,7 +272,7 @@ class ChatModule {
                 const data = await response.json();
                 if (data.code === 200 && data.content) {
                     this.accessToken = data.content.accessToken;
-                    console.log(`액세스 토큰 획득 완료`);
+    
                     return data.content;
                 }
             }
@@ -251,7 +284,7 @@ class ChatModule {
     
     // CHZZK 웹소켓 연결
     async connectWebSocket() {
-        console.log('CHZZK WebSocket 연결 시도...');
+
         
         if (!this.accessToken || !this.chatChannelId) {
             throw new Error('액세스 토큰 또는 채팅 채널 ID가 없습니다.');
@@ -262,13 +295,13 @@ class ChatModule {
             const wsUrl = `wss://kr-ss${serverNum}.chat.naver.com/chat?channelId=${this.chatChannelId}&accessToken=${this.accessToken}`;
             
             try {
-                console.log(`WebSocket 연결 시도 ${serverNum}/10: kr-ss${serverNum}`);
+
                 
                 this.websocket = new WebSocket(wsUrl);
                 
                 // 연결 성공 처리
                 this.websocket.onopen = () => {
-                    console.log(`WebSocket 연결 성공! (kr-ss${serverNum})`);
+
                     this.isConnected = true;
                     
                     // 채팅 연결 메시지 전송
@@ -287,7 +320,7 @@ class ChatModule {
                     };
                     
                     this.websocket.send(JSON.stringify(connectMessage));
-                    console.log('CHZZK 채팅 연결 완료');
+            
                     
                     // 20초마다 heartbeat
                     this.startHeartbeat();

@@ -12,7 +12,7 @@ class SpotifyModule {
     
     // 모듈 시작
     async start() {
-        console.log('Spotify 모듈 시작 중...');
+
         
         const settings = this.settingsManager.getModuleSettings('spotify');
         
@@ -36,7 +36,7 @@ class SpotifyModule {
             this.isActive = true;
             this.startTracking();
             
-            console.log('Spotify 모듈이 시작되었습니다.');
+
             return true;
             
         } catch (error) {
@@ -52,7 +52,7 @@ class SpotifyModule {
     
     // 모듈 중지
     stop() {
-        console.log('Spotify 모듈 중지 중...');
+
         
         this.isActive = false;
         this.isAuthenticated = false;
@@ -64,12 +64,12 @@ class SpotifyModule {
             this.updateInterval = null;
         }
         
-        console.log('Spotify 모듈이 중지되었습니다.');
+
     }
     
     // 모듈 재시작
     async restart() {
-        console.log('Spotify 모듈 재시작 중...');
+
         this.stop();
         await new Promise(resolve => setTimeout(resolve, 500));
         return await this.start();
@@ -80,7 +80,7 @@ class SpotifyModule {
         const settings = this.settingsManager.getModuleSettings('spotify');
         
         try {
-            console.log('Spotify 인증 시도 중...');
+    
             
             // Client Credentials Flow 사용 (사용자 인증 필요 없음)
             const response = await fetch('https://accounts.spotify.com/api/token', {
@@ -100,7 +100,7 @@ class SpotifyModule {
             this.accessToken = data.access_token;
             this.isAuthenticated = true;
             
-            console.log('Spotify 인증 성공!');
+
             return true;
             
         } catch (error) {

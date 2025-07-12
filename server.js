@@ -14,7 +14,7 @@ const cors = require('cors');
 class ChzzkStreamDeckServer {
     constructor() {
         this.app = express();
-        this.port = 3000;
+        this.port = 7112;
         
         // 프로세스 관리
         this.processes = {
@@ -58,9 +58,73 @@ class ChzzkStreamDeckServer {
             res.sendFile(path.join(__dirname, 'index.html'));
         });
 
+
+
         // 채팅 오버레이 페이지
         this.app.get('/chat-overlay.html', (req, res) => {
             res.sendFile(path.join(__dirname, 'src/chat-overlay.html'));
+        });
+
+        // 스포티파이 위젯 페이지
+        this.app.get('/spotify-widget.html', (req, res) => {
+            res.sendFile(path.join(__dirname, 'src/spotify-widget.html'));
+        });
+
+        // 스포티파이 OAuth 콜백 처리
+        this.app.get('/spotify/callback', (req, res) => {
+            const code = req.query.code;
+            const error = req.query.error;
+            
+            if (error) {
+                console.error('❌ Spotify 인증 오류:', error);
+                res.send(`
+                    <html>
+                        <head><title>Spotify 인증 오류</title></head>
+                        <body>
+                            <h1>❌ Spotify 인증 실패</h1>
+                            <p>오류: ${error}</p>
+                            <p><a href="/spotify-widget.html">다시 시도하기</a></p>
+                        </body>
+                    </html>
+                `);
+                return;
+            }
+            
+            if (code) {
+                // 인증 코드 수신 (로그 제거)
+                res.send(`
+                    <html>
+                        <head><title>Spotify 인증 성공</title></head>
+                        <body>
+                            <h1>✅ Spotify 인증 성공</h1>
+                            <p>인증이 완료되었습니다. 창을 닫고 위젯으로 돌아가세요.</p>
+                            <script>
+                                // 부모 창으로 코드 전달
+                                if (window.opener) {
+                                    window.opener.postMessage({
+                                        type: 'spotify-auth-success',
+                                        code: '${code}'
+                                    }, '*');
+                                    window.close();
+                                } else {
+                                    // 새 창이 아닌 경우 메인 대시보드로 리다이렉트
+                                    window.location.href = '/?spotify-auth=success&code=${code}';
+                                }
+                            </script>
+                        </body>
+                    </html>
+                `);
+            } else {
+                res.send(`
+                    <html>
+                        <head><title>Spotify 인증 오류</title></head>
+                        <body>
+                            <h1>❌ 인증 코드가 없습니다</h1>
+                            <p><a href="/spotify-widget.html">다시 시도하기</a></p>
+                        </body>
+                    </html>
+                `);
+            }
         });
 
         // SSE 스트림 엔드포인트
@@ -94,7 +158,6 @@ class ChzzkStreamDeckServer {
         
         // 연결 추가
         this.sseConnections.add(res);
-        console.log(`📡 새 SSE 연결 (총 ${this.sseConnections.size}개)`);
         
         // 기존 메시지 전송 (최근 10개)
         const recentMessages = this.chatMessages.slice(-10);
@@ -105,12 +168,10 @@ class ChzzkStreamDeckServer {
         // 연결 종료 시 정리
         req.on('close', () => {
             this.sseConnections.delete(res);
-            console.log(`📡 SSE 연결 종료 (총 ${this.sseConnections.size}개)`);
         });
         
         req.on('aborted', () => {
             this.sseConnections.delete(res);
-            console.log(`📡 SSE 연결 중단 (총 ${this.sseConnections.size}개)`);
         });
     }
 
@@ -179,7 +240,7 @@ class ChzzkStreamDeckServer {
             throw new Error('채널 ID가 필요합니다.');
         }
         
-        console.log(`🚀 CHZZK 채팅 모듈 시작 - 채널 ID: ${channelId}`);
+        console.log(`🚀 채팅 모듈 시작 - 채널: ${channelId.substring(0, 8)}...`);
         
         // 채팅 클라이언트 실행
         const chatProcess = spawn('node', ['src/chat-client.js', channelId], {
@@ -191,23 +252,22 @@ class ChzzkStreamDeckServer {
         this.status.chat.active = true;
         this.status.chat.pid = chatProcess.pid;
         
-        console.log(`📱 채팅 프로세스 시작됨 - PID: ${chatProcess.pid}`);
-        
         // 프로세스 출력 처리
         chatProcess.stdout.on('data', (data) => {
             const output = data.toString().trim();
-            console.log(`[CHAT] ${output}`);
             
             // 채팅 메시지 파싱 및 브로드캐스트
             this.parseChatMessage(output);
         });
         
         chatProcess.stderr.on('data', (data) => {
-            console.error(`[CHAT ERROR] ${data.toString().trim()}`);
+            console.error(`❌ 채팅 오류: ${data.toString().trim()}`);
         });
         
         chatProcess.on('close', (code) => {
-            console.log(`📱 채팅 프로세스 종료됨 - 코드: ${code}`);
+            if (code !== 0) {
+                console.log(`⚠️ 채팅 모듈 종료 - 코드: ${code}`);
+            }
             this.processes.chat = null;
             this.status.chat.active = false;
             this.status.chat.pid = null;
@@ -229,7 +289,7 @@ class ChzzkStreamDeckServer {
             throw new Error('실행 중인 채팅 모듈이 없습니다.');
         }
         
-        console.log('🛑 CHZZK 채팅 모듈 중지 중...');
+        console.log('🛑 채팅 모듈 중지');
         
         this.processes.chat.kill('SIGTERM');
         this.processes.chat = null;
@@ -400,36 +460,24 @@ class ChzzkStreamDeckServer {
      * 시작 정보 출력
      */
     printStartupInfo() {
-        console.log('🎛️  ChzzkStreamDeck OBS 위젯 서버가 시작되었습니다.');
-        console.log(`📊 대시보드: http://localhost:${this.port}`);
-        console.log(`🔧 API 엔드포인트: http://localhost:${this.port}/api`);
-        console.log('');
-        console.log('📋 사용 가능한 API:');
-        console.log('  POST /api/chat/start   - 채팅 모듈 시작');
-        console.log('  POST /api/chat/stop    - 채팅 모듈 중지');
-        console.log('  GET  /api/chat/stream  - 실시간 채팅 스트림 (SSE)');
-        console.log('  GET  /api/chat/messages- 채팅 메시지 조회');
-        console.log('  GET  /api/status       - 모듈 상태 확인');
-        console.log('');
-        console.log('🎮 OBS 브라우저 소스:');
-        console.log(`  채팅 오버레이: http://localhost:${this.port}/chat-overlay.html`);
-        console.log('');
+        console.log('🎮 ChzzkStreamDeck 서버 시작 (포트: 7112)');
+        console.log(`📊 대시보드: http://localhost:7112`);
+        console.log(`💬 채팅 오버레이: http://localhost:7112/chat-overlay.html`);
+        console.log(`🎵 스포티파이 위젯: http://localhost:7112/spotify-widget.html`);
     }
 
     /**
      * 서버 종료
      */
     shutdown() {
-        console.log('\n🛑 서버 종료 중...');
+        console.log('🛑 서버 종료');
         
         // 모든 프로세스 정리
         if (this.processes.chat) {
-            console.log('📱 채팅 프로세스 종료 중...');
             this.processes.chat.kill('SIGTERM');
         }
         
         if (this.processes.spotify) {
-            console.log('🎵 Spotify 프로세스 종료 중...');
             this.processes.spotify.kill('SIGTERM');
         }
         
@@ -442,7 +490,6 @@ class ChzzkStreamDeckServer {
             }
         });
         
-        console.log('✅ 서버 종료 완료');
         process.exit(0);
     }
 

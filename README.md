@@ -28,8 +28,8 @@ node server.js
 ```
 
 ### 3. 브라우저에서 접속
-- **컨트롤 패널**: http://localhost:3000
-- **채팅 오버레이**: http://localhost:3000/chat-overlay.html
+- **컨트롤 패널**: http://localhost:7112
+- **채팅 오버레이**: http://localhost:7112/chat-overlay.html
 
 ## 📁 프로젝트 구조
 
@@ -67,13 +67,13 @@ ChzzkStreamDeck/
    ```
 
 2. **컨트롤 패널에서 설정**:
-   - http://localhost:3000 접속
+   - http://localhost:7112 접속
    - 채널 ID 입력 (32자리 영숫자)
    - **채팅 시작** 버튼 클릭
 
 3. **OBS 설정**:
    - 소스 추가 → 브라우저
-   - URL: `http://localhost:3000/chat-overlay.html`
+   - URL: `http://localhost:7112/chat-overlay.html`
    - 크기: 400x600px
 
 ## 🎨 테마 시스템
@@ -107,8 +107,8 @@ node src/chat-client.js <채널ID> [--verbose]
 ```
 
 ### 채팅 오버레이 사용
-- **설정**: 메인 대시보드(`http://localhost:3000`)에서 모든 설정 관리
-- **오버레이**: 순수 채팅 표시 전용 (`http://localhost:3000/chat-overlay.html`)
+- **설정**: 메인 대시보드(`http://localhost:7112`)에서 모든 설정 관리
+- **오버레이**: 순수 채팅 표시 전용 (`http://localhost:7112/chat-overlay.html`)
 - **실시간 동기화**: 설정 변경 시 오버레이에 즉시 반영
 - **설정 항목**: 테마, 최대 메시지 수, 메시지 지속 시간, 정렬 방식
 - **채널 연동**: 메인 대시보드에서 CHZZK 채널 ID 설정
@@ -126,7 +126,7 @@ node src/chat-client.js <채널ID> [--verbose]
 1. OBS Studio 열기
 2. **소스** → **추가** → **브라우저**
 3. 설정:
-   - **URL**: `http://localhost:3000/chat-overlay.html`
+   - **URL**: `http://localhost:7112/chat-overlay.html`
    - **너비**: 400
    - **높이**: 600
    - **CSS**: `body { background: transparent !important; }`

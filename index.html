@@ -38,33 +38,17 @@
                         </label>
                     </div>
                 </div>
-                <div class="module-preview" id="spotify-preview">
-                    <div class="spotify-widget theme-simple-purple">
-                        <div class="album-cover">
-                            <i class="fas fa-music"></i>
-                        </div>
-                        <div class="song-info">
-                            <div class="song-title">노래 제목</div>
-                            <div class="song-artist">아티스트</div>
-                            <div class="progress-bar">
-                                <div class="progress"></div>
+                                    <div class="module-preview" id="spotify-preview">
+                        <div class="browser-source-section">
+                            <h4>브라우저 소스 주소</h4>
+                            <div class="url-copy-container">
+                                <input type="text" id="spotify-url" readonly value="http://localhost:7112/spotify-widget.html">
+                                <button class="copy-btn" onclick="copyToClipboard('spotify-url')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <div class="module-status">
-                        <span class="status-indicator"></span>
-                        <span class="port-info">포트: <span id="spotify-port">8001</span></span>
-                    </div>
-                    <div class="browser-source-section">
-                        <h4>브라우저 소스 주소</h4>
-                        <div class="url-copy-container">
-                            <input type="text" id="spotify-url" readonly value="http://localhost:8001/spotify">
-                            <button class="copy-btn" onclick="copyToClipboard('spotify-url')">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- 채팅 모듈 -->
@@ -87,35 +71,17 @@
                         </label>
                     </div>
                 </div>
-                <div class="module-preview" id="chat-preview">
-                    <div class="chat-widget theme-simple-purple">
-                        <div class="chat-message">
-                            <span class="username">사용자1:</span>
-                            <span class="message">안녕하세요!</span>
-                        </div>
-                        <div class="chat-message">
-                            <span class="username">사용자2:</span>
-                            <span class="message">반갑습니다~</span>
-                        </div>
-                        <div class="chat-message">
-                            <span class="username">사용자3:</span>
-                            <span class="message">오늘도 화이팅!</span>
+                                    <div class="module-preview" id="chat-preview">
+                        <div class="browser-source-section">
+                            <h4>브라우저 소스 주소</h4>
+                            <div class="url-copy-container">
+                                <input type="text" id="chat-url" readonly value="http://localhost:7112/chat-overlay.html">
+                                <button class="copy-btn" onclick="copyToClipboard('chat-url')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="module-status">
-                        <span class="status-indicator"></span>
-                        <span class="port-info">포트: <span id="chat-port">3000</span></span>
-                    </div>
-                    <div class="browser-source-section">
-                        <h4>브라우저 소스 주소</h4>
-                        <div class="url-copy-container">
-                            <input type="text" id="chat-url" readonly value="http://localhost:3000/chat-overlay.html">
-                            <button class="copy-btn" onclick="copyToClipboard('chat-url')">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -133,14 +99,6 @@
                 <!-- Spotify 설정 -->
                 <div id="spotify-settings" class="settings-panel">
                     <div class="settings-section">
-                        <h3>네트워크 설정</h3>
-                        <div class="setting-item">
-                            <label for="spotify-port-input">포트 번호</label>
-                            <input type="number" id="spotify-port-input" min="1000" max="65535" value="8001">
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
                         <h3>Spotify API 설정</h3>
                         <div class="setting-item">
                             <label for="spotify-client-id">Client ID</label>
@@ -153,54 +111,28 @@
                         <div class="setting-item info-message">
                             <small>Spotify Developer Dashboard에서 앱을 생성하여 Client ID와 Client Secret을 받아야 합니다.</small>
                         </div>
+                        <div class="setting-item">
+                            <label for="spotify-auth-btn">스포티파이 인증</label>
+                            <button class="btn btn-primary" id="spotify-auth-btn" onclick="authenticateSpotify()">
+                                <i class="fab fa-spotify"></i> 인증받기
+                            </button>
+                        </div>
+
                     </div>
                     
                     <div class="settings-section">
                         <h3>테마 설정</h3>
-                        <div class="theme-selector">
-                            <div class="theme-option" data-theme="simple-purple">
-                                <input type="radio" name="spotify-theme" id="theme-simple-purple" value="simple-purple" checked>
-                                <label for="theme-simple-purple">
-                                    <div class="theme-preview simple-purple-preview">
-                                        <div class="mini-album"></div>
-                                        <div class="mini-info">
-                                            <div class="mini-title"></div>
-                                            <div class="mini-artist"></div>
-                                            <div class="mini-progress"></div>
-                                        </div>
-                                    </div>
-                                    <span class="theme-name">Simple Purple</span>
-                                </label>
-                            </div>
-                            
-                            <div class="theme-option" data-theme="neon-green">
-                                <input type="radio" name="spotify-theme" id="theme-neon-green" value="neon-green">
-                                <label for="theme-neon-green">
-                                    <div class="theme-preview neon-green-preview">
-                                        <div class="mini-album"></div>
-                                        <div class="mini-info">
-                                            <div class="mini-title"></div>
-                                            <div class="mini-artist"></div>
-                                            <div class="mini-progress"></div>
-                                        </div>
-                                    </div>
-                                    <span class="theme-name">Neon Green</span>
-                                </label>
-                            </div>
+                        <div class="setting-item">
+                            <label for="spotify-theme-select">테마 선택</label>
+                            <select id="spotify-theme-select">
+                                <option value="simple-purple" selected>Simple Purple</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
                 <!-- 채팅 설정 -->
                 <div id="chat-settings" class="settings-panel" style="display: none;">
-                    <div class="settings-section">
-                        <h3>네트워크 설정</h3>
-                        <div class="setting-item">
-                            <label for="chat-port-input">포트 번호</label>
-                            <input type="number" id="chat-port-input" min="1000" max="65535" value="8002">
-                        </div>
-                    </div>
-                    
                     <div class="settings-section">
                         <h3>CHZZK 채팅 설정</h3>
                         <div class="setting-item">
@@ -245,51 +177,11 @@
                     
                     <div class="settings-section">
                         <h3>테마 설정</h3>
-                        <div class="theme-selector">
-                            <div class="theme-option" data-theme="simple-purple">
-                                <input type="radio" name="chat-theme" id="chat-theme-simple-purple" value="simple-purple" checked>
-                                <label for="chat-theme-simple-purple">
-                                    <div class="theme-preview simple-purple-preview">
-                                        <div class="mini-chat">
-                                            <div class="mini-message">
-                                                <span class="mini-username">User:</span>
-                                                <span class="mini-text">Hello!</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span class="theme-name">Simple Purple</span>
-                                </label>
-                            </div>
-                            
-                            <div class="theme-option" data-theme="neon-green">
-                                <input type="radio" name="chat-theme" id="chat-theme-neon-green" value="neon-green">
-                                <label for="chat-theme-neon-green">
-                                    <div class="theme-preview neon-green-preview">
-                                        <div class="mini-chat">
-                                            <div class="mini-message">
-                                                <span class="mini-username">User:</span>
-                                                <span class="mini-text">Hello!</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span class="theme-name">Neon Green</span>
-                                </label>
-                            </div>
-                            
-                            <div class="theme-option" data-theme="rocket-purple">
-                                <input type="radio" name="chat-theme" id="chat-theme-rocket-purple" value="rocket-purple">
-                                <label for="chat-theme-rocket-purple">
-                                    <div class="theme-preview rocket-purple-preview">
-                                        <div class="mini-chat">
-                                            <div class="mini-message">
-                                                <span class="mini-username">User:</span>
-                                                <span class="mini-text">Hello!</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span class="theme-name">Rocket Purple</span>
-                                </label>
-                            </div>
+                        <div class="setting-item">
+                            <label for="chat-theme-select">테마 선택</label>
+                            <select id="chat-theme-select">
+                                <option value="simple-purple" selected>Simple Purple</option>
+                            </select>
                         </div>
                     </div>
                     

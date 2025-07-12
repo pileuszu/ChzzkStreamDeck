@@ -135,6 +135,6 @@ class UIManager {
     
     // 성공 메시지 표시
     showSuccess(message) {
-        console.log('성공:', message); // 추후 더 나은 토스트 알림으로 교체 가능
+// 성공 메시지 (로그 제거)
     }
 } 
