@@ -1,5 +1,5 @@
 // UI 관리자
-export class UIManager {
+class UIManager {
     constructor(app) {
         this.app = app;
         this.currentModule = null;

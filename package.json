@@ -4,7 +4,8 @@
   "description": "OBS용 치지직 스트림 위젯 대시보드",
   "main": "index.html",
   "scripts": {
-    "start": "node -e \"console.log('브라우저에서 index.html을 열어주세요.')\"",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
     "chat-test": "node test/chzzk-chat-terminal.js",
     "api-test": "node test/chzzk-api-test.js",
     "channel-info": "node test/chzzk-channel-info.js",
@@ -20,10 +21,13 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2",
+    "socket.io-client": "^4.8.1",
     "ws": "^8.14.2"
   },
-  "devDependencies": {},
   "engines": {
     "node": ">=14.0.0"
   }
-} 
+}

@@ -1,5 +1,5 @@
 // Spotify 모듈
-export class SpotifyModule {
+class SpotifyModule {
     constructor(settingsManager) {
         this.settingsManager = settingsManager;
         this.isActive = false;

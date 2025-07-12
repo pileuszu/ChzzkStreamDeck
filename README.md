@@ -1,236 +1,211 @@
-# 치지직 스트림덱 2.0 📺
+# 🎮 ChzzkStreamDeck v2.0
 
-OBS에서 사용할 수 있는 브라우저 소스 커스텀 위젯 대시보드입니다.
+**CHZZK (치지직) 스트리밍 위젯 시스템**
+
+OBS Studio에서 사용할 수 있는 실시간 채팅 오버레이 시스템입니다.
+
+## ✨ 주요 기능
+
+- 🎨 **다중 테마 지원**: 마법같은 Simple Purple, 사이버펑크 Neon Green
+- 💬 **실시간 채팅**: CHZZK WebSocket 연결
+- 😀 **이모티콘 지원**: CHZZK 이모티콘 실시간 표시
+- 📡 **Server-Sent Events**: 실시간 데이터 스트리밍
+- 🎛️ **웹 컨트롤 패널**: 브라우저에서 설정 관리
+- 🎥 **방송 최적화**: 깔끔한 오버레이 인터페이스
+- ✨ **고급 애니메이션**: 부드러운 입장/퇴장 효과
+- 🔧 **모듈화된 구조**: 깔끔한 코드 아키텍처
 
 ## 🚀 빠른 시작
 
-1. **의존성 설치**
+### 1. 의존성 설치
+```bash
+npm install
+```
+
+### 2. 서버 시작
+```bash
+node server.js
+```
+
+### 3. 브라우저에서 접속
+- **컨트롤 패널**: http://localhost:3000
+- **채팅 오버레이**: http://localhost:3000/chat-overlay.html
+
+## 📁 프로젝트 구조
+
+```
+ChzzkStreamDeck/
+├── 📁 src/                          # 소스 코드
+│   ├── 🎮 chat-client.js            # CHZZK 채팅 클라이언트
+│   └── 🎨 chat-overlay.html         # 채팅 오버레이 (OBS용)
+├── 📁 js/                           # 기존 JavaScript 파일들
+│   ├── 📁 modules/
+│   │   ├── chat.js                  # 채팅 모듈
+│   │   └── spotify.js               # Spotify 모듈
+│   └── 📁 utils/
+│       ├── settings.js              # 설정 유틸리티
+│       └── ui.js                    # UI 유틸리티
+├── 📁 css/                          # 스타일시트
+│   ├── components.css               # 컴포넌트 스타일
+│   ├── main.css                     # 메인 스타일
+│   └── themes.css                   # 테마 스타일
+├── 📁 test/                         # 테스트 파일들 (기존)
+│   ├── chzzk-chat-terminal.js       # 작동하는 채팅 터미널
+│   └── TERMINAL_TEST_GUIDE.md       # 테스트 가이드
+├── 🌐 server.js                     # 메인 백엔드 서버
+├── 🏠 index.html                    # 메인 대시보드
+└── 📦 package.json                  # 프로젝트 설정
+```
+
+## 🎯 사용 방법
+
+### 1. 실제 CHZZK 채팅 사용
+
+1. **서버 시작**:
    ```bash
-   npm install
+   node server.js
    ```
 
-2. **연결 테스트 (중요!)**
-   ```bash
-   # 1단계: API 연결 테스트 (필수)
-   npm run api-test 789d1d9c5b58c847f9f18c8e5073c580
-   
-   # 2단계: 채널 정보 전체 확인
-   npm run channel-info 789d1d9c5b58c847f9f18c8e5073c580
-   
-   # 3단계: API 성공 시 채팅 테스트
-   npm run chat-test 789d1d9c5b58c847f9f18c8e5073c580
-   
-   # 사용법 확인
-   npm test
-   ```
+2. **컨트롤 패널에서 설정**:
+   - http://localhost:3000 접속
+   - 채널 ID 입력 (32자리 영숫자)
+   - **채팅 시작** 버튼 클릭
 
-3. **대시보드 실행**
-   - 브라우저에서 `index.html` 파일을 열어주세요.
-   - 각 모듈의 설정을 완료한 후 활성화할 수 있습니다.
+3. **OBS 설정**:
+   - 소스 추가 → 브라우저
+   - URL: `http://localhost:3000/chat-overlay.html`
+   - 크기: 400x600px
 
-## 🎮 지원하는 모듈
+## 🎨 테마 시스템
 
-### 1. Spotify 모듈
-- **기능**: 현재 재생 중인 곡 정보를 실시간으로 표시
-- **필요한 설정**: 
-  - Spotify Client ID
-  - Spotify Client Secret
-- **테마**: Simple Purple, Neon Green
+### Simple Purple ✨
+- 마법같은 보라색 그라데이션 (#667eea, #764ba2)
+- 고급 애니메이션 효과 (bounce, scale, blur)
+- 호버 시 언더라인 확장 효과
+- 다층 그림자와 글로우 효과
+- 환상적인 배경 라디얼 그라데이션
 
-### 2. 채팅 모듈
-- **기능**: 치지직 채팅을 실시간으로 표시
-- **필요한 설정**: 
-  - 치지직 Channel ID
-  - 최대 메시지 수
-  - 메시지 사라지는 시간
-- **테마**: Simple Purple, Neon Green
+### Neon Green
+- 네온 그린 색상 (#00ff00)
+- 사이버펑크 스타일
+- 글로우 효과 및 네온 애니메이션
 
-## 🛠️ 설정 방법
+## 🔧 API 엔드포인트
 
-### Spotify API 설정
-1. [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)에서 앱 생성
-2. Client ID와 Client Secret 복사
-3. 대시보드에서 Spotify 설정에 입력
+### 메인 서버 (포트 3000)
+- `POST /api/chat/start` - 채팅 모듈 시작
+- `POST /api/chat/stop` - 채팅 모듈 중지  
+- `GET /api/chat/stream` - 실시간 채팅 스트림 (SSE)
+- `GET /api/chat/messages` - 채팅 메시지 조회
+- `GET /api/status` - 서버 상태 확인
 
-### 치지직 채널 ID 확인
-1. 치지직 방송 페이지 URL에서 채널 ID 확인
-   - 예: `https://chzzk.naver.com/live/9ae7d38b629b78f48e49fb3106218ff5`
-   - 여기서 `9ae7d38b629b78f48e49fb3106218ff5`이 채널 ID
-   - 채널 ID는 32자리 영문+숫자 조합입니다
+## 🛠️ 개발 가이드
 
-## 🧪 테스트 기능
-
-### 웹 브라우저 테스트
-- `test/chzzk-chat-test.html` 파일을 브라우저에서 열어 치지직 채팅 연결을 테스트할 수 있습니다.
-
-### API 연결 테스트
-치지직 API 접근 문제를 진단하고 해결하는 전용 도구입니다.
-
+### 채팅 클라이언트 직접 실행
 ```bash
-# API 연결 테스트
-npm run api-test [채널ID]
-
-# 예시
-npm run api-test 9ae7d38b629b78f48e49fb3106218ff5
+node src/chat-client.js <채널ID> [--verbose]
 ```
 
-**API 테스트 특징:**
-- 🔍 **다양한 헤더 조합**: 기본, 브라우저, 모바일, curl 등 4가지 방법
-- 📊 **명확한 결과 구분**: 성공/실패를 한눈에 구분 가능
-- 📋 **자동 요약 리포트**: 어떤 API가 성공했는지 명확한 요약 제공
-- 💡 **자동 해결책 제안**: 실패 시 구체적인 해결 방법 안내
-- 🎯 **채널 정보 표시**: 성공 시 채널명, 상태, 채팅 ID 등 자동 표시
+### 채팅 오버레이 사용
+- **설정**: 메인 대시보드(`http://localhost:3000`)에서 모든 설정 관리
+- **오버레이**: 순수 채팅 표시 전용 (`http://localhost:3000/chat-overlay.html`)
+- **실시간 동기화**: 설정 변경 시 오버레이에 즉시 반영
+- **설정 항목**: 테마, 최대 메시지 수, 메시지 지속 시간, 정렬 방식
+- **채널 연동**: 메인 대시보드에서 CHZZK 채널 ID 설정
 
-### 채널 정보 상세 조회
-성공한 API 엔드포인트의 전체 응답 데이터를 확인하는 전용 도구입니다.
+## 📋 요구사항
 
-```bash
-# 특정 채널 정보 전체 조회
-npm run channel-info [채널ID]
+- **Node.js**: 14.0.0 이상
+- **npm**: 6.0.0 이상
+- **브라우저**: Chrome, Firefox, Edge (ES6+ 지원)
+- **OBS Studio**: 27.0.0 이상 권장
 
-# 예시
-npm run channel-info 789d1d9c5b58c847f9f18c8e5073c580
+## 🎮 OBS 설정 가이드
 
-# 기본 채널들 모두 테스트
-node test/chzzk-channel-info.js --all
-```
+### 브라우저 소스 추가
+1. OBS Studio 열기
+2. **소스** → **추가** → **브라우저**
+3. 설정:
+   - **URL**: `http://localhost:3000/chat-overlay.html`
+   - **너비**: 400
+   - **높이**: 600
+   - **CSS**: `body { background: transparent !important; }`
 
-**채널 정보 도구 특징:**
-- 📋 **전체 API 응답**: JSON 전체 내용을 보기 좋게 포맷팅
-- 🎯 **구조화된 출력**: 카테고리별로 정리된 채널 정보
-- 📊 **상세 통계**: 팔로워 수, 구독자 수, 시청자 수 등
-- 🔴 **라이브 정보**: 현재 방송 상태, 제목, 시청자 수 등
-- 💡 **숨겨진 데이터**: API가 제공하는 모든 필드 확인 가능
+### 채팅 오버레이 특징
+- 깔끔한 UI: 방송용으로 최적화된 인터페이스  
+- 자연스러운 페이드: 상단 메시지 자동 페이드아웃 효과
+- 이모티콘 지원: CHZZK 이모티콘 실시간 표시
+- 고급 애니메이션: 마법같은 Simple Purple 테마 효과
+- 정렬 옵션: 왼쪽/오른쪽/중앙 정렬 지원
+- 실시간 설정: 메인 대시보드 설정이 즉시 반영
+- 스마트 관리: 메시지 수 및 지속 시간 자동 제어
 
-### 터미널 테스트
-치지직 채팅 웹소켓 연결을 터미널에서 테스트할 수 있습니다.
+### 권장 설정
+- **새로고침**: 체크 해제
+- **페이지 권한**: 모두 허용
+- **하드웨어 가속**: 활성화
 
-```bash
-# 채널 ID로 채팅 연결 테스트
-node test/chzzk-chat-terminal.js [채널ID]
-
-# 예시 (실제 치지직 채널 ID 사용)
-node test/chzzk-chat-terminal.js 9ae7d38b629b78f48e49fb3106218ff5
-
-# 또는 npm script 사용
-npm run chat-test [채널ID]
-```
-
-📖 **상세 가이드**: [터미널 테스트 가이드](test/TERMINAL_TEST_GUIDE.md)를 참고하세요.
-
-**터미널 테스트 특징:**
-- 🔄 **자동 서버 전환**: kr-ss1 → kr-ss2 → kr-ss3 순서로 자동 시도
-- 📡 **실시간 채팅 메시지 표시**: 닉네임, 시간, 메시지 내용
-- 🔍 **연결 과정 상세 로그**: API 호출 및 웹소켓 연결 상태 실시간 확인
-- 📊 **메시지 카운터**: 수신한 채팅 메시지 개수 표시
-- 💓 **자동 핑퐁**: 20초마다 연결 상태 확인
-- ⌨️ **안전한 종료**: Ctrl+C 또는 "quit" 입력으로 종료
-
-## 🎨 OBS 설정
-
-1. **브라우저 소스 추가**
-   - 소스 추가 → 브라우저 소스
-   - URL: `http://localhost:포트번호/[모듈명].html`
-
-2. **위젯 사용**
-   - 대시보드에서 모듈 활성화
-   - 브라우저 소스 URL 복사 버튼 사용
-   - OBS에서 해당 URL 설정
-
-## 📁 파일 구조
-
-```
-ChzzkStreamDeck 2.0/
-├── index.html              # 메인 대시보드
-├── package.json             # Node.js 프로젝트 설정
-├── README.md               # 사용 설명서
-├── API_TROUBLESHOOTING.md  # API 문제 해결 가이드
-├── css/                    # 스타일시트
-│   ├── main.css           # 메인 스타일
-│   ├── components.css     # 컴포넌트 스타일
-│   └── themes.css         # 테마 스타일
-├── js/                     # JavaScript 모듈
-│   ├── main.js            # 메인 애플리케이션
-│   ├── modules/           # 위젯 모듈
-│   │   ├── spotify.js     # Spotify 모듈
-│   │   └── chat.js        # 채팅 모듈
-│   └── utils/             # 유틸리티
-│       ├── settings.js    # 설정 관리
-│       └── ui.js          # UI 관리
-└── test/                   # 테스트 파일
-    ├── chzzk-chat-test.html      # 웹 브라우저 테스트
-    ├── chzzk-chat-test.js        # 웹 테스트 스크립트
-    ├── chzzk-chat-terminal.js    # 터미널 테스트 스크립트
-    ├── chzzk-api-test.js         # API 연결 테스트
-    ├── chzzk-channel-info.js     # 채널 정보 상세 조회
-    └── TERMINAL_TEST_GUIDE.md    # 터미널 테스트 가이드
-```
-
-## 🎯 주요 기능
-
-- **모듈화된 구조**: 각 위젯을 독립적으로 관리
-- **실시간 업데이트**: 웹소켓 및 API 연동
-- **테마 시스템**: 다양한 디자인 테마 지원
-- **설정 관리**: 로컬 스토리지 기반 설정 저장
-- **반응형 디자인**: 다양한 화면 크기 지원
-- **OBS 최적화**: 브라우저 소스용 최적화
-
-## 🔧 개발 정보
-
-### 기술 스택
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **API**: Spotify Web API, 치지직 API
-- **웹소켓**: 치지직 채팅 실시간 연결
-- **테스트**: Node.js, WebSocket (ws)
-
-### 브라우저 지원
-- Chrome 80+
-- Firefox 74+
-- Safari 13.1+
-- Edge 80+
-
-## 📝 라이센스
-
-MIT License - 자유롭게 사용하세요!
-
-## 🐛 문제 해결
+## 🔍 문제 해결
 
 ### 자주 발생하는 문제
 
-1. **설정 창이 안 열릴 때**
-   - 브라우저 개발자 도구에서 JavaScript 오류 확인
-   - 모든 파일이 올바른 위치에 있는지 확인
+#### 1. "앱 업데이트 후에 정상 시청 가능합니다"
+- **원인**: 방송이 진행 중이 아니거나 채널 ID 오류
+- **해결**: 라이브 방송 중인 채널 ID 확인
 
-2. **Spotify 연결 실패**
-   - Client ID/Client Secret 확인
-   - 네트워크 연결 상태 확인
+#### 2. 채팅 메시지가 안 나타남
+- **원인**: 서버 연결 문제 또는 API 제한
+- **해결**: 
+  1. 서버 상태 확인 (`GET /api/status`)
+  2. 브라우저 콘솔 오류 확인
+  3. 방화벽 설정 확인
 
-3. **채팅 연결 실패**
-   - 채널 ID 형식 확인 (32자리 영문+숫자)
-   - 방송 상태 확인 (라이브 중이어야 함)
-   - 웹소켓 서버 자동 전환 기능으로 안정성 향상
+#### 3. WebSocket 연결 실패
+- **원인**: 네트워크 문제 또는 서버 과부하
+- **해결**: 
+  1. 다른 채널 ID로 테스트
+  2. VPN 사용 시 해제
+  3. 서버 재시작 후 다시 시도
 
-4. **"앱 업데이트 후 정상 시청 가능" 오류**
-   - User-Agent 헤더 자동 추가로 해결
-   - 브라우저 환경 시뮬레이션으로 API 접근
-   - 📖 **자세한 해결 가이드**: [API 문제 해결 가이드](API_TROUBLESHOOTING.md)
+## 📈 버전 히스토리
 
-5. **터미널 테스트 실행 오류**
-   ```bash
-   # Node.js 버전 확인 (14.0.0 이상 필요)
-   node --version
-   
-   # 의존성 재설치
-   npm install
-   ```
+### v2.0.0 (2024-12-19)
+- ✨ 전체 코드 리팩토링
+- 🏗️ 모듈화된 아키텍처
+- 🎨 마법같은 Simple Purple 테마 시스템
+- 😀 CHZZK 이모티콘 완전 지원
+- 📡 안정적인 SSE 연결
+- 🎯 간편한 URL 접근
+- 🎥 방송 최적화 오버레이
+- ✨ 고급 애니메이션 및 시각 효과
+- 🔄 실시간 설정 동기화
+- 🎨 자연스러운 상단 페이드 효과
+- 📐 다양한 정렬 옵션 (왼쪽/오른쪽/중앙)
 
-### 디버깅 팁
-- 브라우저 개발자 도구 콘솔 확인
-- 네트워크 탭에서 API 요청 상태 확인
-- 터미널에서 실시간 로그 확인
+### v1.x.x
+- 기본 채팅 기능
+- 간단한 오버레이
 
-### 문제 해결 우선순위
-1. **API 연결 테스트 먼저 실행**: `npm run api-test [채널ID]`
-2. **성공하면 채팅 테스트**: `npm run chat-test [채널ID]`
-3. **실패하면 다른 채널 ID 시도**: 현재 라이브 중인 채널 사용
-4. **지속적 실패시**: [API 문제 해결 가이드](API_TROUBLESHOOTING.md) 참조 
+## 🤝 기여하기
+
+1. 이 저장소를 포크합니다
+2. 기능 브랜치를 생성합니다 (`git checkout -b feature/AmazingFeature`)
+3. 변경사항을 커밋합니다 (`git commit -m 'Add some AmazingFeature'`)
+4. 브랜치에 푸시합니다 (`git push origin feature/AmazingFeature`)
+5. Pull Request를 생성합니다
+
+## 📄 라이선스
+
+이 프로젝트는 MIT 라이선스 하에 있습니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
+
+## 🙏 감사의 말
+
+- **CHZZK API**: 실시간 채팅 데이터 제공
+- **OBS Studio**: 강력한 스트리밍 소프트웨어
+- **Node.js 커뮤니티**: 훌륭한 생태계
+
+---
+
+💡 **팁**: 문제가 발생하면 먼저 테스트 서버로 오버레이가 정상 작동하는지 확인해보세요!
+
+🎮 **해피 스트리밍!** 🎮 

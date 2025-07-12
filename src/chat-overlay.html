@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHZZK 채팅 오버레이 v2.0</title>
+    <style>
+        /* ===== FONT IMPORT ===== */
+        @font-face {
+            font-family: 'Ownglyph_ParkDaHyun';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2411-3@1.0/Ownglyph_ParkDaHyun.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* ===== BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Ownglyph_ParkDaHyun', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            overflow: hidden;
+        }
+
+        /* ===== CHAT CONTAINER ===== */
+        .chat-container {
+            width: 400px;
+            height: 600px;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            position: relative;
+        }
+
+        .chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 100%;
+            overflow: hidden;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* ===== 정렬 방식 CSS ===== */
+        .align-left .chat-messages {
+            align-items: flex-start;
+        }
+
+        .align-right .chat-messages {
+            align-items: flex-end;
+        }
+
+        .align-center .chat-messages {
+            align-items: center;
+        }
+
+        .align-left .chat-message,
+        .align-right .chat-message,
+        .align-center .chat-message {
+            max-width: 80%;
+        }
+
+        .align-right .chat-message {
+            margin-left: auto;
+        }
+
+        .align-center .chat-message {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ===== CHAT MESSAGE STYLES ===== */
+        .chat-message {
+            opacity: 0;
+            transform: translateX(-20px);
+            padding: 16px 22px;
+            border-radius: 18px;
+            backdrop-filter: blur(10px);
+            word-wrap: break-word;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            margin: 0 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chat-message.fade-out {
+            animation: fadeOut 0.5s ease-in forwards;
+        }
+
+        .username {
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 6px;
+            display: block;
+            line-height: 1.2;
+            font-family: 'Ownglyph_ParkDaHyun', sans-serif;
+        }
+
+        .message {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #ffffff;
+            word-break: break-word;
+            font-family: 'Ownglyph_ParkDaHyun', sans-serif;
+        }
+
+        .emoji, .emoticon {
+            width: 28px;
+            height: 28px;
+            display: inline-block;
+            vertical-align: middle;
+            margin: 0 3px;
+            border-radius: 4px;
+            transition: transform 0.2s ease;
+        }
+
+        .emoji:hover, .emoticon:hover {
+            transform: scale(1.2);
+        }
+
+        /* ===== ENHANCED SIMPLE PURPLE THEME ===== */
+        .theme-simple-purple .chat-message {
+            background: linear-gradient(135deg, 
+                rgba(138, 43, 226, 0.25) 0%, 
+                rgba(102, 126, 234, 0.20) 35%, 
+                rgba(75, 0, 130, 0.18) 70%, 
+                rgba(128, 0, 128, 0.15) 100%);
+            border: 1px solid rgba(147, 112, 219, 0.6);
+            backdrop-filter: blur(25px);
+            position: relative;
+            overflow: visible;
+        }
+
+        .theme-simple-purple .username {
+            background: linear-gradient(135deg, 
+                #9966cc 0%, 
+                #8a2be2 25%, 
+                #7b68ee 50%, 
+                #9370db 75%, 
+                #ba55d3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 
+                0 0 15px rgba(138, 43, 226, 0.8),
+                0 0 30px rgba(147, 112, 219, 0.6),
+                0 0 45px rgba(128, 0, 128, 0.4);
+            filter: drop-shadow(0 0 12px rgba(138, 43, 226, 0.6));
+            font-weight: 800;
+            position: relative;
+            font-size: 16px;
+        }
+
+        .theme-simple-purple .message {
+            color: #ffffff;
+            text-shadow: 
+                0 2px 6px rgba(0, 0, 0, 0.8),
+                0 0 20px rgba(255, 255, 255, 0.4);
+            line-height: 1.6;
+            position: relative;
+            font-weight: 600;
+        }
+
+        /* 애니메이션 효과 강화 */
+        .theme-simple-purple .chat-message {
+            animation: enhancedPurpleSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes enhancedPurpleSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-40px) translateY(30px) scale(0.8) rotate(-2deg);
+                filter: blur(8px);
+            }
+            30% {
+                opacity: 0.3;
+                transform: translateX(-20px) translateY(15px) scale(0.9) rotate(-1deg);
+                filter: blur(4px);
+            }
+            70% {
+                opacity: 0.8;
+                transform: translateX(-5px) translateY(-5px) scale(1.05) rotate(0deg);
+                filter: blur(1px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) translateY(0) scale(1) rotate(0deg);
+                filter: blur(0);
+            }
+        }
+
+        /* ===== NEON GREEN THEME ===== */
+        .theme-neon-green .chat-message {
+            background: linear-gradient(135deg, 
+                rgba(0, 255, 0, 0.25) 0%, 
+                rgba(34, 197, 94, 0.20) 35%, 
+                rgba(22, 163, 74, 0.18) 70%, 
+                rgba(21, 128, 61, 0.15) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.6);
+            backdrop-filter: blur(25px);
+            position: relative;
+            overflow: visible;
+        }
+
+        .theme-neon-green .username {
+            background: linear-gradient(135deg, 
+                #00ff00 0%, 
+                #22c55e 25%, 
+                #16a34a 50%, 
+                #15803d 75%, 
+                #166534 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 
+                0 0 15px rgba(0, 255, 0, 0.8),
+                0 0 30px rgba(34, 197, 94, 0.6),
+                0 0 45px rgba(22, 163, 74, 0.4);
+            filter: drop-shadow(0 0 12px rgba(0, 255, 0, 0.6));
+            font-weight: 800;
+            position: relative;
+            font-size: 16px;
+        }
+
+        .theme-neon-green .message {
+            color: #ffffff;
+            text-shadow: 
+                0 2px 6px rgba(0, 0, 0, 0.8),
+                0 0 20px rgba(255, 255, 255, 0.4);
+            line-height: 1.6;
+            position: relative;
+            font-weight: 600;
+        }
+
+        /* 애니메이션 효과 */
+        .theme-neon-green .chat-message {
+            animation: enhancedGreenSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes enhancedGreenSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-40px) translateY(30px) scale(0.8) rotate(-2deg);
+                filter: blur(8px);
+            }
+            30% {
+                opacity: 0.3;
+                transform: translateX(-20px) translateY(15px) scale(0.9) rotate(-1deg);
+                filter: blur(4px);
+            }
+            70% {
+                opacity: 0.8;
+                transform: translateX(-5px) translateY(-5px) scale(1.05) rotate(0deg);
+                filter: blur(1px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) translateY(0) scale(1) rotate(0deg);
+                filter: blur(0);
+            }
+        }
+
+        /* ===== ROCKET PURPLE THEME ===== */
+        .theme-rocket-purple .chat-message {
+            background: #ffffff;
+            border: 4px solid #000000;
+            backdrop-filter: none;
+            position: relative;
+            overflow: visible;
+            opacity: 1;
+        }
+
+        .theme-rocket-purple .username {
+            color: #8b5cf6;
+            font-weight: 800;
+            position: relative;
+            font-size: 16px;
+        }
+
+        .theme-rocket-purple .message {
+            color: #000000;
+            line-height: 1.6;
+            position: relative;
+            font-weight: 600;
+        }
+
+        /* 애니메이션 효과 */
+        .theme-rocket-purple .chat-message {
+            animation: rocketSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes rocketSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-40px) translateY(30px) scale(0.8) rotate(-2deg);
+                filter: blur(8px);
+            }
+            30% {
+                opacity: 0.3;
+                transform: translateX(-20px) translateY(15px) scale(0.9) rotate(-1deg);
+                filter: blur(4px);
+            }
+            70% {
+                opacity: 0.8;
+                transform: translateX(-5px) translateY(-5px) scale(1.05) rotate(0deg);
+                filter: blur(1px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) translateY(0) scale(1) rotate(0deg);
+                filter: blur(0);
+            }
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-25px) scale(0.9);
+                filter: blur(3px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-20px) scale(0.95);
+            }
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 450px) {
+            .chat-container {
+                width: 100vw;
+                padding: 15px;
+            }
+            
+            .settings-panel {
+                right: 5px;
+                top: 5px;
+                min-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container theme-simple-purple" id="chatContainer">
+        <div class="chat-messages" id="chatMessages">
+            <!-- 채팅 메시지들이 동적으로 추가됩니다 -->
+        </div>
+    </div>
+
+    <script>
+        /**
+         * CHZZK 채팅 오버레이 클래스
+         * @version 2.0.0
+         */
+        class ChatOverlay {
+            constructor() {
+                this.eventSource = null;
+                this.maxMessages = 20;
+                this.messageTimeout = 30; // 초
+                this.serverUrl = 'http://localhost:3000';
+                this.messages = [];
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
+                this.isUnlimitedMode = false; // 무제한 모드 플래그
+                
+                this.elements = {
+                    chatContainer: document.getElementById('chatContainer'),
+                    chatMessages: document.getElementById('chatMessages')
+                };
+                
+                this.init();
+            }
+
+            /**
+             * 초기화
+             */
+            init() {
+                this.loadSettings();
+                this.connectToServer();
+                this.setupEventListeners();
+                
+                console.log('🎨 CHZZK 채팅 오버레이 v2.0 시작');
+            }
+
+            /**
+             * 이벤트 리스너 설정
+             */
+            setupEventListeners() {
+                // 페이지 언로드 시 연결 정리
+                window.addEventListener('beforeunload', () => {
+                    this.disconnect();
+                });
+
+                // localStorage 변경 감지 (다른 탭에서 설정 변경 시)
+                window.addEventListener('storage', (e) => {
+                    if (e.key && e.key.startsWith('chat-')) {
+                        console.log('🔄 설정 변경 감지:', e.key, '→', e.newValue);
+                        this.loadSettings();
+                    }
+                });
+
+                // 같은 탭에서의 설정 변경을 감지하기 위한 커스텀 이벤트
+                window.addEventListener('chatSettingsChanged', () => {
+                    console.log('🔄 채팅 설정 변경 감지');
+                    this.loadSettings();
+                });
+            }
+
+            /**
+             * 설정 로드
+             */
+            loadSettings() {
+                // index.html의 설정값들 로드
+                const settings = {
+                    theme: localStorage.getItem('chat-theme') || 'simple-purple',
+                    maxMessages: localStorage.getItem('chat-max-messages') || '20',
+                    messageTimeout: localStorage.getItem('chat-fade-time') || '30',
+                    serverUrl: localStorage.getItem('serverUrl') || 'http://localhost:3000',
+                    alignment: localStorage.getItem('chat-alignment') || 'default',
+                    platform: localStorage.getItem('chat-platform') || 'chzzk',
+                    channelId: localStorage.getItem('chat-channel-id') || ''
+                };
+                
+                this.maxMessages = parseInt(settings.maxMessages) || 20;
+                
+                // 메시지 타임아웃 처리 개선
+                const timeoutValue = parseInt(settings.messageTimeout);
+                this.messageTimeout = isNaN(timeoutValue) ? 30 : timeoutValue;
+                this.isUnlimitedMode = (this.messageTimeout === 0);
+                
+                this.serverUrl = settings.serverUrl;
+                this.alignment = settings.alignment;
+                this.platform = settings.platform;
+                this.channelId = settings.channelId;
+                
+                // 테마 적용
+                this.elements.chatContainer.className = `chat-container theme-${settings.theme}`;
+                
+                // 정렬 방식 적용
+                this.applyChatAlignment(settings.alignment);
+                
+                console.log('🎨 설정 로드 완료:', {
+                    ...settings,
+                    messageTimeout: this.messageTimeout,
+                    isUnlimitedMode: this.isUnlimitedMode,
+                    maxMessages: this.maxMessages
+                });
+            }
+
+            /**
+             * 채팅 정렬 방식 적용
+             */
+            applyChatAlignment(alignment) {
+                const container = this.elements.chatContainer;
+                
+                // 기존 정렬 클래스 제거
+                container.classList.remove('align-left', 'align-right', 'align-center');
+                
+                // 새 정렬 클래스 추가
+                if (alignment !== 'default') {
+                    container.classList.add(`align-${alignment}`);
+                }
+            }
+
+            /**
+             * 서버 연결
+             */
+            connectToServer() {
+                this.disconnect();
+                
+                console.log('🔄 서버 연결 시도...');
+
+                try {
+                    this.eventSource = new EventSource(`${this.serverUrl}/api/chat/stream`);
+                    
+                    this.eventSource.onopen = () => {
+                        this.reconnectAttempts = 0;
+                        console.log('✅ SSE 연결 성공');
+                    };
+
+                    this.eventSource.onmessage = (event) => {
+                        try {
+                            const message = JSON.parse(event.data);
+                            this.addMessage(message);
+                        } catch (error) {
+                            console.error('메시지 파싱 오류:', error);
+                        }
+                    };
+
+                    this.eventSource.onerror = (error) => {
+                        console.error('SSE 오류:', error);
+                        
+                        // 자동 재연결
+                        this.scheduleReconnect();
+                    };
+
+                } catch (error) {
+                    console.error('연결 오류:', error);
+                    this.scheduleReconnect();
+                }
+            }
+
+            /**
+             * 재연결 스케줄링
+             */
+            scheduleReconnect() {
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+                    
+                    console.log(`🔄 ${delay/1000}초 후 재연결 시도 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                    
+                    setTimeout(() => {
+                        if (this.eventSource?.readyState === EventSource.CLOSED) {
+                            this.connectToServer();
+                        }
+                    }, delay);
+                }
+            }
+
+            /**
+             * 메시지 추가
+             */
+            addMessage(messageData) {
+                const messageElement = this.createMessageElement(messageData);
+                this.elements.chatMessages.appendChild(messageElement);
+                
+                // 메시지 배열에 추가
+                this.messages.push({
+                    element: messageElement,
+                    timestamp: Date.now()
+                });
+                
+                // 메시지 수 관리 (무제한 모드가 아닐 때만)
+                if (!this.isUnlimitedMode) {
+                    this.cleanupExcessMessages();
+                }
+                
+                // 자동 삭제 타이머 설정 (무제한 모드가 아닐 때만)
+                if (!this.isUnlimitedMode && this.messageTimeout > 0) {
+                    setTimeout(() => {
+                        this.removeMessage(messageElement);
+                    }, this.messageTimeout * 1000);
+                    
+                    console.log(`⏰ 메시지 자동 삭제 타이머 설정: ${this.messageTimeout}초`);
+                } else if (this.isUnlimitedMode) {
+                    console.log('♾️ 메시지 무제한 유지 - 타이머 및 수량 제한 없음');
+                }
+                
+                // 페이드 아웃 효과 적용
+                this.applyFadeEffect();
+                
+                // 스크롤 하단으로
+                this.scrollToBottom();
+                
+                // 메시지 입장 효과
+                this.triggerMessageEntrance(messageElement);
+            }
+
+            /**
+             * 진짜 페이드 아웃 효과 적용
+             */
+            applyFadeEffect() {
+                const messages = this.elements.chatMessages.querySelectorAll('.chat-message');
+                const messageCount = messages.length;
+                
+                if (messageCount <= 1) return;
+                
+                // 위로 갈수록 opacity 감소
+                messages.forEach((message, index) => {
+                    const position = index / (messageCount - 1); // 0 (맨 위) ~ 1 (맨 아래)
+                    const opacity = Math.max(0.1, position); // 최소 0.1, 최대 1
+                    
+                    message.style.opacity = opacity;
+                    
+                    // 디버깅 정보 (최대 5개만 출력)
+                    if (index < 5) {
+                        console.log(`📊 메시지 ${index + 1}: position=${position.toFixed(2)}, opacity=${opacity.toFixed(2)}`);
+                    }
+                });
+                
+                console.log(`✨ 페이드 효과 적용 완료: ${messageCount}개 메시지`);
+            }
+
+            /**
+             * 메시지 입장 효과
+             */
+            triggerMessageEntrance(messageElement) {
+                // 약간의 지연 후 반짝임 효과
+                setTimeout(() => {
+                    messageElement.style.transform = 'scale(1.08)';
+                    messageElement.style.filter = 'brightness(1.2)';
+                    setTimeout(() => {
+                        messageElement.style.transform = 'scale(1)';
+                        messageElement.style.filter = 'brightness(1)';
+                    }, 300);
+                }, 150);
+            }
+
+            /**
+             * 메시지 요소 생성
+             */
+            createMessageElement(messageData) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'chat-message';
+                
+                // 이모티콘 처리된 메시지
+                const processedMessage = this.processEmoticons(messageData.message, messageData.extras);
+                
+                messageElement.innerHTML = `
+                    <span class="username">${this.escapeHtml(messageData.username)}</span>
+                    <div class="message">${processedMessage}</div>
+                `;
+                
+                // 애니메이션 트리거
+                setTimeout(() => {
+                    messageElement.style.animation = 'enhancedPurpleSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+                }, 10);
+                
+                return messageElement;
+            }
+
+            /**
+             * 이모티콘 처리
+             */
+            processEmoticons(message, extras) {
+                let processedMessage = this.escapeHtml(message);
+                
+                if (extras && extras.emojis) {
+                    try {
+                        const emojis = typeof extras.emojis === 'string' ? JSON.parse(extras.emojis) : extras.emojis;
+                        
+                        for (const [id, url] of Object.entries(emojis)) {
+                            const emoticonPattern = new RegExp(`\\{:${id}:\\}`, 'g');
+                            processedMessage = processedMessage.replace(emoticonPattern, 
+                                `<img src="${url}" alt="${id}" class="emoticon" title="${id}" loading="lazy">`);
+                        }
+                    } catch (error) {
+                        console.warn('이모티콘 처리 오류:', error);
+                    }
+                }
+                
+                return processedMessage;
+            }
+
+            /**
+             * 초과 메시지 정리
+             */
+            cleanupExcessMessages() {
+                console.log(`📊 메시지 수 확인: ${this.messages.length}/${this.maxMessages} (최대: ${this.maxMessages})`);
+                
+                let removedCount = 0;
+                while (this.messages.length > this.maxMessages) {
+                    const oldestMessage = this.messages.shift();
+                    this.removeMessage(oldestMessage.element);
+                    removedCount++;
+                }
+                
+                if (removedCount > 0) {
+                    console.log(`🗑️ 초과 메시지 ${removedCount}개 제거 완료`);
+                    // 메시지 제거 후 페이드 효과 재적용
+                    this.applyFadeEffect();
+                }
+            }
+
+            /**
+             * 메시지 제거
+             */
+            removeMessage(messageElement) {
+                if (!messageElement || !messageElement.parentNode) return;
+                
+                messageElement.classList.add('fade-out');
+                
+                setTimeout(() => {
+                    if (messageElement.parentNode) {
+                        messageElement.parentNode.removeChild(messageElement);
+                    }
+                    // 메시지 제거 후 페이드 효과 재적용
+                    this.applyFadeEffect();
+                }, 500);
+                
+                // 배열에서도 제거
+                this.messages = this.messages.filter(msg => msg.element !== messageElement);
+            }
+
+            /**
+             * 하단으로 스크롤
+             */
+            scrollToBottom() {
+                this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+            }
+
+            /**
+             * HTML 이스케이프
+             */
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            /**
+             * 연결 종료
+             */
+            disconnect() {
+                if (this.eventSource) {
+                    this.eventSource.close();
+                    this.eventSource = null;
+                }
+            }
+        }
+
+        // 전역 인스턴스 생성
+        window.chatOverlay = new ChatOverlay();
+    </script>
+</body>
+</html> 

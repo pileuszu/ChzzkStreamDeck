@@ -14,6 +14,7 @@
         <header class="dashboard-header">
             <h1><i class="fas fa-th"></i> OBS 위젯 대시보드</h1>
             <p class="subtitle">각 모듈을 클릭하여 활성화/비활성화할 수 있습니다</p>
+
         </header>
 
         <div class="modules-grid">
@@ -103,12 +104,12 @@
                     </div>
                     <div class="module-status">
                         <span class="status-indicator"></span>
-                        <span class="port-info">포트: <span id="chat-port">8002</span></span>
+                        <span class="port-info">포트: <span id="chat-port">3000</span></span>
                     </div>
                     <div class="browser-source-section">
                         <h4>브라우저 소스 주소</h4>
                         <div class="url-copy-container">
-                            <input type="text" id="chat-url" readonly value="http://localhost:8002/chat">
+                            <input type="text" id="chat-url" readonly value="http://localhost:3000/chat-overlay.html">
                             <button class="copy-btn" onclick="copyToClipboard('chat-url')">
                                 <i class="fas fa-copy"></i>
                             </button>
@@ -149,7 +150,7 @@
                             <label for="spotify-client-secret">Client Secret</label>
                             <input type="password" id="spotify-client-secret" placeholder="Spotify Client Secret 입력">
                         </div>
-                        <div class="setting-item">
+                        <div class="setting-item info-message">
                             <small>Spotify Developer Dashboard에서 앱을 생성하여 Client ID와 Client Secret을 받아야 합니다.</small>
                         </div>
                     </div>
@@ -201,15 +202,43 @@
                     </div>
                     
                     <div class="settings-section">
-                        <h3>채널 설정</h3>
+                        <h3>CHZZK 채팅 설정</h3>
                         <div class="setting-item">
-                            <label for="chat-channel-id">Channel ID</label>
-                            <input type="text" id="chat-channel-id" placeholder="채널 ID 입력">
+                            <label for="chat-channel-id">채널 ID
+                                <i class="fas fa-info-circle info-icon" data-tooltip="CHZZK 채널 URL의 마지막 부분에 있는 32자리 영숫자 조합입니다."></i>
+                            </label>
+                            <input type="text" id="chat-channel-id" placeholder="CHZZK 채널 ID 입력 (예: d7ddd7585a271e55159ae47c0ce9a9dd)">
                         </div>
+                        <div class="setting-item info-message">
+                            <small>💡 채팅 모듈은 터미널에서 실행됩니다. 브라우저는 컨트롤 패널 역할만 합니다.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>채팅 표시 설정</h3>
                         <div class="setting-item">
                             <label for="chat-platform">플랫폼</label>
                             <select id="chat-platform">
-                                <option value="chzzk">치지직</option>
+                                <option value="chzzk">CHZZK</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="chat-max-messages">최대 메시지 수</label>
+                            <input type="number" id="chat-max-messages" min="10" max="100" value="50">
+                        </div>
+                        <div class="setting-item">
+                            <label for="chat-fade-time">메시지 유지 시간 (초)
+                                <i class="fas fa-info-circle info-icon" data-tooltip="0이면 메시지가 사라지지 않습니다."></i>
+                            </label>
+                            <input type="number" id="chat-fade-time" min="0" max="300" value="0">
+                        </div>
+                        <div class="setting-item">
+                            <label for="chat-alignment">정렬 방식</label>
+                            <select id="chat-alignment">
+                                <option value="default">기본</option>
+                                <option value="left">왼쪽 정렬</option>
+                                <option value="right">오른쪽 정렬</option>
+                                <option value="center">중앙 정렬</option>
                             </select>
                         </div>
                     </div>
@@ -220,11 +249,12 @@
                             <div class="theme-option" data-theme="simple-purple">
                                 <input type="radio" name="chat-theme" id="chat-theme-simple-purple" value="simple-purple" checked>
                                 <label for="chat-theme-simple-purple">
-                                    <div class="theme-preview simple-purple-preview chat-preview">
-                                        <div class="mini-chat-messages">
-                                            <div class="mini-chat-message"></div>
-                                            <div class="mini-chat-message"></div>
-                                            <div class="mini-chat-message"></div>
+                                    <div class="theme-preview simple-purple-preview">
+                                        <div class="mini-chat">
+                                            <div class="mini-message">
+                                                <span class="mini-username">User:</span>
+                                                <span class="mini-text">Hello!</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <span class="theme-name">Simple Purple</span>
@@ -234,40 +264,36 @@
                             <div class="theme-option" data-theme="neon-green">
                                 <input type="radio" name="chat-theme" id="chat-theme-neon-green" value="neon-green">
                                 <label for="chat-theme-neon-green">
-                                    <div class="theme-preview neon-green-preview chat-preview">
-                                        <div class="mini-chat-messages">
-                                            <div class="mini-chat-message"></div>
-                                            <div class="mini-chat-message"></div>
-                                            <div class="mini-chat-message"></div>
+                                    <div class="theme-preview neon-green-preview">
+                                        <div class="mini-chat">
+                                            <div class="mini-message">
+                                                <span class="mini-username">User:</span>
+                                                <span class="mini-text">Hello!</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <span class="theme-name">Neon Green</span>
                                 </label>
                             </div>
+                            
+                            <div class="theme-option" data-theme="rocket-purple">
+                                <input type="radio" name="chat-theme" id="chat-theme-rocket-purple" value="rocket-purple">
+                                <label for="chat-theme-rocket-purple">
+                                    <div class="theme-preview rocket-purple-preview">
+                                        <div class="mini-chat">
+                                            <div class="mini-message">
+                                                <span class="mini-username">User:</span>
+                                                <span class="mini-text">Hello!</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="theme-name">Rocket Purple</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="settings-section">
-                        <h3>채팅 설정</h3>
-                        <div class="setting-item">
-                            <label for="chat-max-messages">최대 메시지 수</label>
-                            <input type="number" id="chat-max-messages" min="5" max="50" value="10">
-                        </div>
-                        <div class="setting-item">
-                            <label for="chat-alignment">채팅 정렬</label>
-                            <select id="chat-alignment">
-                                <option value="default">기본 (스트리머 오른쪽, 시청자 왼쪽)</option>
-                                <option value="right">오른쪽 정렬</option>
-                                <option value="left">왼쪽 정렬</option>
-                            </select>
-                        </div>
-                        <div class="setting-item">
-                            <label for="chat-fade-time">메시지 사라지는 시간 (초)
-                                <i class="fas fa-info-circle info-icon" data-tooltip="0으로 설정하면 사라지지 않습니다"></i>
-                            </label>
-                            <input type="number" id="chat-fade-time" min="0" max="60" value="0">
-                        </div>
-                    </div>
+
                 </div>
             </div>
             <div class="modal-footer">
@@ -277,6 +303,10 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js"></script>
+    <script src="js/utils/settings.js"></script>
+    <script src="js/utils/ui.js"></script>
+    <script src="js/modules/spotify.js"></script>
+    <script src="js/modules/chat.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html> 

@@ -1,5 +1,5 @@
 // 설정 관리자
-export class SettingsManager {
+class SettingsManager {
     constructor() {
         this.settings = {
             spotify: {
@@ -64,7 +64,7 @@ export class SettingsManager {
         
         // 브라우저 소스 URL 업데이트
         document.getElementById('spotify-url').value = `http://localhost:${this.settings.spotify.port}/spotify`;
-        document.getElementById('chat-url').value = `http://localhost:${this.settings.chat.port}/chat`;
+        document.getElementById('chat-url').value = `http://localhost:3000/chat-overlay.html`;
     }
     
     // 모달에서 설정 로드
@@ -72,22 +72,37 @@ export class SettingsManager {
         const settings = this.settings[moduleName];
         
         if (moduleName === 'spotify') {
-            document.getElementById('spotify-port-input').value = settings.port;
-            document.getElementById('spotify-client-id').value = settings.clientId;
-            document.getElementById('spotify-client-secret').value = settings.clientSecret;
+            // 개별 localStorage 값들 우선 확인
+            const theme = localStorage.getItem('spotify-theme') || settings.theme;
+            const port = localStorage.getItem('spotify-port') || settings.port;
+            const clientId = localStorage.getItem('spotify-client-id') || settings.clientId;
+            const clientSecret = localStorage.getItem('spotify-client-secret') || settings.clientSecret;
             
-            const themeRadio = document.querySelector(`input[name="spotify-theme"][value="${settings.theme}"]`);
+            document.getElementById('spotify-port-input').value = port;
+            document.getElementById('spotify-client-id').value = clientId;
+            document.getElementById('spotify-client-secret').value = clientSecret;
+            
+            const themeRadio = document.querySelector(`input[name="spotify-theme"][value="${theme}"]`);
             if (themeRadio) themeRadio.checked = true;
             
         } else if (moduleName === 'chat') {
-            document.getElementById('chat-port-input').value = settings.port;
-            document.getElementById('chat-channel-id').value = settings.channelId;
-            document.getElementById('chat-platform').value = settings.platform;
-            document.getElementById('chat-max-messages').value = settings.maxMessages;
-            document.getElementById('chat-alignment').value = settings.alignment;
-            document.getElementById('chat-fade-time').value = settings.fadeTime;
+            // 개별 localStorage 값들 우선 확인 (chat-overlay.html 호환)
+            const theme = localStorage.getItem('chat-theme') || settings.theme;
+            const port = localStorage.getItem('chat-port') || settings.port;
+            const channelId = localStorage.getItem('chat-channel-id') || settings.channelId;
+            const platform = localStorage.getItem('chat-platform') || settings.platform;
+            const maxMessages = localStorage.getItem('chat-max-messages') || settings.maxMessages;
+            const alignment = localStorage.getItem('chat-alignment') || settings.alignment;
+            const fadeTime = localStorage.getItem('chat-fade-time') || settings.fadeTime;
             
-            const themeRadio = document.querySelector(`input[name="chat-theme"][value="${settings.theme}"]`);
+            document.getElementById('chat-port-input').value = port;
+            document.getElementById('chat-channel-id').value = channelId;
+            document.getElementById('chat-platform').value = platform;
+            document.getElementById('chat-max-messages').value = maxMessages;
+            document.getElementById('chat-alignment').value = alignment;
+            document.getElementById('chat-fade-time').value = fadeTime;
+            
+            const themeRadio = document.querySelector(`input[name="chat-theme"][value="${theme}"]`);
             if (themeRadio) themeRadio.checked = true;
         }
     }
@@ -104,6 +119,12 @@ export class SettingsManager {
             
             this.updateModuleSettings('spotify', newSettings);
             
+            // Spotify 개별 설정 저장
+            localStorage.setItem('spotify-theme', newSettings.theme);
+            localStorage.setItem('spotify-port', newSettings.port.toString());
+            localStorage.setItem('spotify-client-id', newSettings.clientId);
+            localStorage.setItem('spotify-client-secret', newSettings.clientSecret);
+            
         } else if (moduleName === 'chat') {
             const newSettings = {
                 port: parseInt(document.getElementById('chat-port-input').value),
@@ -116,6 +137,21 @@ export class SettingsManager {
             };
             
             this.updateModuleSettings('chat', newSettings);
+            
+            // 채팅 개별 설정 저장 (chat-overlay.html 호환)
+            localStorage.setItem('chat-theme', newSettings.theme);
+            localStorage.setItem('chat-max-messages', newSettings.maxMessages.toString());
+            localStorage.setItem('chat-fade-time', newSettings.fadeTime.toString());
+            localStorage.setItem('chat-alignment', newSettings.alignment);
+            localStorage.setItem('chat-platform', newSettings.platform);
+            localStorage.setItem('chat-channel-id', newSettings.channelId);
+            
+            // 채팅 설정 변경 이벤트 발생
+            window.dispatchEvent(new CustomEvent('chatSettingsChanged', {
+                detail: newSettings
+            }));
+            
+            console.log('🎨 채팅 설정 저장 및 이벤트 발생:', newSettings);
         }
         
         this.updateUI();

@@ -1,8 +1,4 @@
 // 메인 애플리케이션 초기화
-import { SettingsManager } from './utils/settings.js';
-import { UIManager } from './utils/ui.js';
-import { SpotifyModule } from './modules/spotify.js';
-import { ChatModule } from './modules/chat.js';
 
 class App {
     constructor() {
@@ -55,7 +51,7 @@ class App {
                     e.target.checked = false;
                 }
             } else {
-                this.chatModule.stop();
+                await this.chatModule.stop();
             }
             this.uiManager.updateModuleCard('chat', this.chatModule.isActive);
         });
