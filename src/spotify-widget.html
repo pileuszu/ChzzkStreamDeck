@@ -13,6 +13,20 @@
             font-style: normal;
         }
 
+        @font-face {
+            font-family: 'CookieRun-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/CookieRun-Regular.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'SacheonUju-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/SacheonUju-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         /* ===== BASE STYLES ===== */
         * {
             margin: 0;
@@ -21,7 +35,7 @@
         }
 
         body {
-            font-family: 'Ownglyph_ParkDaHyun', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'CookieRun-Regular', 'Ownglyph_ParkDaHyun', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: transparent;
             overflow: hidden;
             padding: 20px;
@@ -33,9 +47,7 @@
             border: 2px solid rgba(147, 112, 219, 0.8);
             border-radius: 15px;
             padding: 20px;
-            width: fit-content;
-            max-width: 400px;
-            min-width: 300px;
+            width: 400px; /* 고정 너비로 변경 */
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             position: relative;
             overflow: visible;
@@ -86,24 +98,41 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            overflow: hidden;
+            min-width: 0; /* flexbox에서 자식 요소 축소 허용 */
         }
 
         .song-title {
-            font-size: 18px;
             font-weight: 800;
             color: #8a2be2;
             line-height: 1.2;
             margin: 0;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            font-family: 'CookieRun-Regular', 'Ownglyph_ParkDaHyun', sans-serif;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
         }
 
         .song-artist {
-            font-size: 14px;
             color: #666;
             font-weight: 500;
             line-height: 1.3;
             margin: 0;
+            font-family: 'CookieRun-Regular', 'Ownglyph_ParkDaHyun', sans-serif;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
         }
+
+        /* 애니메이션 클래스 */
+        .font-size-transition {
+            transition: font-size 0.3s ease;
+        }
+
+
 
         /* 재생바 */
         .progress-container {
@@ -136,6 +165,7 @@
             min-width: 35px;
             font-weight: 500;
             text-align: center;
+            font-family: 'CookieRun-Regular', 'Ownglyph_ParkDaHyun', sans-serif;
         }
 
         /* 상태 표시 */
@@ -146,6 +176,7 @@
             font-size: 16px;
             font-weight: 600;
             width: 100%;
+            font-family: 'CookieRun-Regular', 'Ownglyph_ParkDaHyun', sans-serif;
         }
 
         .error {
@@ -160,7 +191,7 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-family: 'Ownglyph_ParkDaHyun', sans-serif;
+            font-family: 'CookieRun-Regular', 'Ownglyph_ParkDaHyun', sans-serif;
             font-size: 14px;
             font-weight: 600;
             transition: all 0.3s ease;
@@ -204,23 +235,15 @@
         /* 반응형 */
         @media (max-width: 450px) {
             .spotify-widget {
+                width: 350px; /* 작은 화면에서도 고정 너비 유지 */
                 flex-direction: column;
                 text-align: center;
                 gap: 16px;
-                min-width: 250px;
             }
             
             .album-cover {
                 width: 60px;
                 height: 60px;
-            }
-            
-            .song-title {
-                font-size: 16px;
-            }
-            
-            .song-artist {
-                font-size: 13px;
             }
         }
     </style>
@@ -248,7 +271,7 @@
                 // Spotify API 설정
                 this.clientId = null;
                 this.clientSecret = null;
-                this.redirectUri = `http://localhost:7112/spotify/callback`;
+                this.redirectUri = null;
                 this.scopes = [
                     'user-read-currently-playing',
                     'user-read-playback-state'
@@ -269,6 +292,7 @@
                 // 스포티파이 인증 정보 로드
                 this.clientId = localStorage.getItem('spotify-client-id');
                 this.clientSecret = localStorage.getItem('spotify-client-secret');
+                this.redirectUri = localStorage.getItem('spotify-redirect-uri') || 'http://localhost:7112/spotify/callback';
                 this.accessToken = localStorage.getItem('spotify-access-token');
                 this.refreshToken = localStorage.getItem('spotify-refresh-token');
                 this.tokenExpiry = localStorage.getItem('spotify-token-expiry');
@@ -466,8 +490,8 @@
                         }
                     </div>
                     <div class="song-info">
-                        <div class="song-title">${this.escapeHtml(track.name)}</div>
-                        <div class="song-artist">${this.escapeHtml(track.artists.join(', '))}</div>
+                        <div class="song-title" id="song-title">${this.escapeHtml(track.name)}</div>
+                        <div class="song-artist" id="song-artist">${this.escapeHtml(track.artists.join(', '))}</div>
                         <div class="progress-container">
                             <span class="time" id="current-time">${this.formatTime(track.progress_ms)}</span>
                             <div class="progress-bar">
@@ -477,6 +501,11 @@
                         </div>
                     </div>
                 `;
+                
+                // 텍스트 길이 체크 및 폰트 크기 조정
+                setTimeout(() => {
+                    this.adjustTextSize();
+                }, 200);
                 
                 // 실시간 진행률 업데이트 시작
                 this.startProgressUpdate(track);
@@ -560,6 +589,63 @@
                     this.progressInterval = null;
                 }
             }
+
+            adjustTextSize() {
+                const titleElement = document.getElementById('song-title');
+                const artistElement = document.getElementById('song-artist');
+                
+                if (titleElement) {
+                    const titleText = titleElement.textContent;
+                    let fontSize = 18; // 기본 폰트 크기
+                    
+                    // 텍스트 길이에 따라 폰트 크기 조정
+                    if (titleText.length > 40) {
+                        fontSize = 12; // 매우 긴 텍스트
+                    } else if (titleText.length > 30) {
+                        fontSize = 14; // 긴 텍스트
+                    } else if (titleText.length > 20) {
+                        fontSize = 16; // 중간 텍스트
+                    }
+                    
+                    // 매번 애니메이션 적용
+                    titleElement.classList.add('font-size-transition');
+                    titleElement.style.fontSize = fontSize + 'px';
+                    
+                    // 애니메이션 완료 후 transition 클래스 제거
+                    setTimeout(() => {
+                        titleElement.classList.remove('font-size-transition');
+                    }, 300);
+                    
+                    console.log('🎵 제목 폰트 크기 조정:', titleText.length + '자 → ' + fontSize + 'px');
+                }
+                
+                if (artistElement) {
+                    const artistText = artistElement.textContent;
+                    let fontSize = 14; // 기본 폰트 크기
+                    
+                    // 텍스트 길이에 따라 폰트 크기 조정
+                    if (artistText.length > 50) {
+                        fontSize = 10; // 매우 긴 텍스트
+                    } else if (artistText.length > 35) {
+                        fontSize = 11; // 긴 텍스트
+                    } else if (artistText.length > 25) {
+                        fontSize = 12; // 중간 텍스트
+                    }
+                    
+                    // 매번 애니메이션 적용
+                    artistElement.classList.add('font-size-transition');
+                    artistElement.style.fontSize = fontSize + 'px';
+                    
+                    // 애니메이션 완료 후 transition 클래스 제거
+                    setTimeout(() => {
+                        artistElement.classList.remove('font-size-transition');
+                    }, 300);
+                    
+                    console.log('🎵 아티스트 폰트 크기 조정:', artistText.length + '자 → ' + fontSize + 'px');
+                }
+            }
+
+
 
             disconnect() {
                 this.stopPolling();

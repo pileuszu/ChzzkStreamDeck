@@ -13,6 +13,27 @@
             font-style: normal;
         }
 
+        @font-face {
+            font-family: 'Paperlogy-8ExtraBold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
+            font-weight: 800;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'CookieRun-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/CookieRun-Regular.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'SacheonUju-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2506-1@1.0/SacheonUju-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         /* ===== BASE STYLES ===== */
         * {
             margin: 0;
@@ -28,7 +49,7 @@
 
         /* ===== CHAT CONTAINER ===== */
         .chat-container {
-            width: 400px;
+            width: 800px;
             height: 600px;
             padding: 60px 60px 60px 120px;
             display: flex;
@@ -46,6 +67,21 @@
             padding: 20px 20px 20px 60px;
             position: relative;
             justify-content: flex-end;
+            /* 상단 페이드아웃 효과 */
+            mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 5%, rgba(0,0,0,0.5) 15%, rgba(0,0,0,0.8) 25%, black 35%);
+            -webkit-mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.1) 5%, rgba(0,0,0,0.5) 15%, rgba(0,0,0,0.8) 25%, black 35%);
+        }
+
+        .chat-messages::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 20%, rgba(255,255,255,0.3) 50%, transparent 100%);
+            z-index: 10;
+            pointer-events: none;
         }
 
         /* ===== 정렬 방식 CSS ===== */
@@ -153,12 +189,12 @@
             position: relative;
             overflow: visible;
             width: fit-content;
-            min-width: 150px;
-            max-width: 80%;
+            min-width: 200px;
+            max-width: 95%;
             padding: 16px 22px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-top: 50px;
+            margin-top: 20px;
             opacity: 1;
             z-index: 1;
         }
@@ -198,7 +234,7 @@
 
         .theme-simple-purple .rocket-icon {
             position: absolute !important;
-            top: 15px !important;
+            top: -15px !important;
             left: -30px !important;
             width: 80px !important;
             height: 80px !important;
@@ -215,46 +251,52 @@
             pointer-events: none !important;
         }
 
-        .theme-simple-purple .username {
-            color: #8a2be2 !important;
-            font-weight: 800 !important;
+        .theme-simple-purple .star-icon {
             position: absolute !important;
-            top: 11px !important;
-            left: 3px !important;
-            font-size: 14px !important;
-            background-color: transparent !important;
-            background: transparent !important;
-            background-image: none !important;
-            padding: 2px 6px !important;
-            border-radius: 0 !important;
-            z-index: 10 !important;
-            margin-bottom: 0 !important;
-            margin: 0 !important;
-            border: none !important;
-            border-width: 0 !important;
-            border-style: none !important;
-            border-color: transparent !important;
-            outline: none !important;
-            outline-width: 0 !important;
-            box-shadow: none !important;
-            text-shadow: none !important;
+            bottom: -8px !important;
+            right: -10px !important;
+            width: 20px !important;
+            height: 20px !important;
+            background-image: url('../assets/images/PurpleStar.png') !important;
+            background-size: contain !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            z-index: 6 !important;
+            pointer-events: none !important;
+        }
+
+        .theme-simple-purple .username {
+            position: absolute !important;
+            top: 10px !important;
+            right: -8px !important;
+            background: rgba(147, 112, 219, 0.9) !important;
+            color: #ffffff !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            padding: 4px 8px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            transform: rotate(3deg) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+            z-index: 7 !important;
             white-space: nowrap !important;
-            -webkit-box-shadow: none !important;
-            -moz-box-shadow: none !important;
-            -webkit-border-radius: 0 !important;
-            -moz-border-radius: 0 !important;
+            font-family: 'SacheonUju-Regular', 'Ownglyph_ParkDaHyun', sans-serif !important;
         }
 
         .theme-simple-purple .message {
-            color: #333333 !important;
+            color: #6B46C1 !important;
             line-height: 1.6;
             position: relative;
-            font-weight: 500;
+            font-weight: 600;
             text-shadow: none;
             margin-top: 0;
             z-index: 2;
             display: block;
             visibility: visible;
+            font-size: 16px !important;
+            word-break: normal !important;
+            overflow-wrap: normal !important;
+            font-family: 'CookieRun-Regular', 'Ownglyph_ParkDaHyun', sans-serif !important;
         }
 
         /* 애니메이션 효과 강화 - 전체 컨테이너에 적용 */
@@ -549,17 +591,33 @@
                 
                 if (messageCount <= 1) return;
                 
-                // 위로 갈수록 opacity 감소
+                // 위로 갈수록 opacity 감소 (더 자연스러운 곡선)
                 messageContainers.forEach((container, index) => {
                     const position = index / (messageCount - 1); // 0 (맨 위) ~ 1 (맨 아래)
-                    const opacity = Math.max(0.1, position); // 최소 0.1, 최대 1
                     
-                    container.style.opacity = opacity;
+                    // 자연스러운 곡선 함수로 opacity 계산
+                    let opacity;
+                    if (position < 0.3) {
+                        // 상단 30% 구간에서 급격히 감소
+                        opacity = Math.pow(position / 0.3, 2) * 0.3;
+                    } else if (position < 0.6) {
+                        // 중간 구간에서 완만히 증가
+                        opacity = 0.3 + (position - 0.3) / 0.3 * 0.4;
+                    } else {
+                        // 하단 구간에서 완전히 표시
+                        opacity = 0.7 + (position - 0.6) / 0.4 * 0.3;
+                    }
                     
-
+                    container.style.opacity = Math.max(0.05, Math.min(1, opacity));
+                    
+                    // 상단 메시지에 추가 블러 효과
+                    if (position < 0.4) {
+                        const blurAmount = (1 - position / 0.4) * 2;
+                        container.style.filter = `blur(${blurAmount}px)`;
+                    } else {
+                        container.style.filter = 'none';
+                    }
                 });
-                
-
             }
 
             /**
@@ -570,6 +628,7 @@
                 setTimeout(() => {
                     const chatMessage = messageElement.querySelector('.chat-message');
                     const rocketIcon = messageElement.querySelector('.rocket-icon');
+                    const starIcon = messageElement.querySelector('.star-icon');
                     const username = messageElement.querySelector('.username');
                     
                     if (chatMessage) {
@@ -581,6 +640,12 @@
                         if (rocketIcon) {
                             rocketIcon.style.transform = 'rotate(70deg) scale(1.1)';
                             rocketIcon.style.filter = 'drop-shadow(0 0 8px rgba(147, 112, 219, 0.4))';
+                        }
+                        
+                        // 별 이미지 효과
+                        if (starIcon) {
+                            starIcon.style.transform = 'scale(1.2) rotate(15deg)';
+                            starIcon.style.filter = 'drop-shadow(0 0 6px rgba(147, 112, 219, 0.6))';
                         }
                         
                         // 닉네임 박스 효과
@@ -597,6 +662,11 @@
                             if (rocketIcon) {
                                 rocketIcon.style.transform = 'rotate(70deg) scale(1)';
                                 rocketIcon.style.filter = 'none';
+                            }
+                            
+                            if (starIcon) {
+                                starIcon.style.transform = 'scale(1) rotate(0deg)';
+                                starIcon.style.filter = 'none';
                             }
                             
                             if (username) {
@@ -623,6 +693,7 @@
                     <span class="username">${this.escapeHtml(messageData.username)}</span>
                     <div class="chat-message">
                         <div class="message">${processedMessage}</div>
+                        <div class="star-icon"></div>
                     </div>
                 `;
                 

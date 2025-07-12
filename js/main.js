@@ -196,6 +196,7 @@ window.copyToClipboard = (elementId) => {
 window.authenticateSpotify = () => {
     const clientId = localStorage.getItem('spotify-client-id');
     const clientSecret = localStorage.getItem('spotify-client-secret');
+    const redirectUri = localStorage.getItem('spotify-redirect-uri') || 'http://localhost:7112/spotify/callback';
     
     if (!clientId || !clientSecret) {
         alert('Spotify Client ID와 Client Secret을 먼저 입력하고 저장해주세요.');
@@ -207,7 +208,7 @@ window.authenticateSpotify = () => {
         response_type: 'code',
         client_id: clientId,
         scope: 'user-read-currently-playing user-read-playback-state',
-        redirect_uri: 'http://localhost:7112/spotify/callback',
+        redirect_uri: redirectUri,
         show_dialog: 'true'
     });
     

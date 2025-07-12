@@ -5,7 +5,8 @@ class SettingsManager {
             spotify: {
                 theme: 'simple-purple',
                 clientId: '',
-                clientSecret: ''
+                clientSecret: '',
+                redirectUri: 'http://localhost:7112/spotify/callback'
             },
             chat: {
                 theme: 'simple-purple',
@@ -68,6 +69,7 @@ class SettingsManager {
         if (moduleName === 'spotify') {
             document.getElementById('spotify-client-id').value = settings.clientId;
             document.getElementById('spotify-client-secret').value = settings.clientSecret;
+            document.getElementById('spotify-redirect-uri').value = settings.redirectUri;
             document.getElementById('spotify-theme-select').value = settings.theme;
             
         } else if (moduleName === 'chat') {
@@ -86,7 +88,8 @@ class SettingsManager {
             const newSettings = {
                 theme: document.getElementById('spotify-theme-select').value,
                 clientId: document.getElementById('spotify-client-id').value,
-                clientSecret: document.getElementById('spotify-client-secret').value
+                clientSecret: document.getElementById('spotify-client-secret').value,
+                redirectUri: document.getElementById('spotify-redirect-uri').value
             };
             
             this.updateModuleSettings('spotify', newSettings);
@@ -94,6 +97,7 @@ class SettingsManager {
             // 스포티파이 위젯에서 사용할 수 있도록 개별 localStorage 항목으로 저장
             localStorage.setItem('spotify-client-id', newSettings.clientId);
             localStorage.setItem('spotify-client-secret', newSettings.clientSecret);
+            localStorage.setItem('spotify-redirect-uri', newSettings.redirectUri);
             localStorage.setItem('spotify-theme', newSettings.theme);
             
         } else if (moduleName === 'chat') {

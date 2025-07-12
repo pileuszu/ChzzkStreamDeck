@@ -108,8 +108,12 @@
                             <label for="spotify-client-secret">Client Secret</label>
                             <input type="password" id="spotify-client-secret" placeholder="Spotify Client Secret 입력">
                         </div>
+                        <div class="setting-item">
+                            <label for="spotify-redirect-uri">Redirect URI</label>
+                            <input type="text" id="spotify-redirect-uri" placeholder="Redirect URI 입력" value="http://localhost:7112/spotify/callback">
+                        </div>
                         <div class="setting-item info-message">
-                            <small>Spotify Developer Dashboard에서 앱을 생성하여 Client ID와 Client Secret을 받아야 합니다.</small>
+                            <small>Spotify Developer Dashboard에서 앱을 생성하여 Client ID와 Client Secret을 받고, Redirect URI를 등록해야 합니다.</small>
                         </div>
                         <div class="setting-item">
                             <label for="spotify-auth-btn">스포티파이 인증</label>
