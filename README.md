@@ -217,22 +217,6 @@ Each module is independently developed and can be extended:
 - Spotify Module: `js/modules/spotify.js`
 - Music Bot Module: `js/modules/musicbot.js`
 
-## Version History
-
-### v2.0.0 (2024-12-19)
-- Complete system rewrite with modular architecture
-- Spotify integration with OAuth 2.0 authentication
-- Music bot with chat command system
-- Server-based token management
-- Enhanced chat overlay with theme support
-- Centralized settings management
-- OBS browser source optimization
-- Real-time synchronization between dashboard and widgets
-
-### v1.x.x
-- Basic chat functionality
-- Simple overlay system
-
 ## Contributing
 
 1. Fork the repository
@@ -240,10 +224,6 @@ Each module is independently developed and can be extended:
 3. Commit changes (`git commit -m 'Add NewFeature'`)
 4. Push to branch (`git push origin feature/NewFeature`)
 5. Create Pull Request
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
 
 ## Acknowledgments
 
